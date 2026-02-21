@@ -74,7 +74,7 @@
             <input type="file" id="imgInp" accept="image/*">
             <button class="submit-btn" id="upBtn" onclick="uploadNote()">UPLOAD TO HUB</button>
         </div>
-        <h2 style="font-size: 1rem; color: var(--neon-blue);">VAULT HISTORY (UNIVERSAL)</h2>
+        <h2 style="font-size: 1rem; color: var(--neon-blue); text-align: center;">GLOBAL VAULT HISTORY</h2>
         <div id="myUploadsArea" style="width:100%; max-width:400px;"></div>
     </div>
 
@@ -93,7 +93,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCo56hgaC3u_tBtS_bN0z2mrY9NQx0xZDg",
@@ -110,8 +110,7 @@
     const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
 
     let currentVault = null;
-    let selSub = ""; let selChap = "";
-    let historyUnsubscribe = null;
+    let liveSync = null;
 
     window.navigateTo = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -127,22 +126,18 @@
         } else alert("Denied");
     };
 
-    // --- FIX: UNIVERSAL LIVE HISTORY ---
-    // This function stays connected to the database to show history on ANY phone
-    function startHistoryListener(vaultCode) {
-        if (historyUnsubscribe) historyUnsubscribe();
+    // --- GLOBAL SYNC ENGINE ---
+    // This function keeps the phone connected to the global database history
+    function enableGlobalSync(vaultCode) {
+        if (liveSync) liveSync(); // Clear old connections
         
-        const q = query(
-            collection(db, "all_notes"), 
-            where("vault_code", "==", vaultCode),
-            orderBy("created_at", "desc")
-        );
+        const q = query(collection(db, "all_notes"), where("vault_code", "==", vaultCode));
 
-        historyUnsubscribe = onSnapshot(q, (snap) => {
+        liveSync = onSnapshot(q, (snap) => {
             const area = document.getElementById('myUploadsArea');
             area.innerHTML = "";
             if (snap.empty) {
-                area.innerHTML = "<p style='color:#666;'>No history found for this ID.</p>";
+                area.innerHTML = "<p style='color:#666; text-align:center;'>Vault history is currently empty globally.</p>";
                 return;
             }
             snap.forEach(d => {
@@ -152,16 +147,19 @@
                     <div style="flex:1; font-size:0.8rem;">
                         <b>${data.subject}</b> - ${data.chapter}
                     </div>
-                    <button class="del-tag" onclick="deleteMyNote('${d.id}')">ERASE</button>
+                    <button class="del-tag" onclick="deleteGlobalNote('${d.id}')">ERASE</button>
                 </div>`;
             });
+        }, (error) => {
+            console.error("Sync Error:", error);
+            alert("Database rules blocking sync. Check Firestore Rules!");
         });
     }
 
-    window.deleteMyNote = async (id) => {
-        if(confirm("Erase this page from your vault?")) {
+    window.deleteGlobalNote = async (id) => {
+        if(confirm("Erase from global history?")) {
             await deleteDoc(doc(db, "all_notes", id));
-            // History updates automatically due to the listener
+            // History updates automatically on all phones due to liveSync
         }
     };
 
@@ -169,15 +167,12 @@
         const code = document.getElementById('vCode').value;
         const pass = document.getElementById('vPass').value;
         const snap = await getDoc(doc(db, "vaults", code));
-        
         if(snap.exists() && snap.data().pass === pass) {
             currentVault = snap.data();
             document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
-            startHistoryListener(currentVault.code); // Connect to universal history
+            enableGlobalSync(currentVault.code); // Activate Global Sync
             navigateTo('dashboardPage');
-        } else {
-            alert("ID not found or password wrong.");
-        }
+        } else alert("Invalid ID or Password");
     };
 
     window.registerUser = async () => {
@@ -185,8 +180,8 @@
         const code = document.getElementById('rCode').value.trim();
         const pass = document.getElementById('rPass').value.trim();
         if(code.length === 3 && name && pass) {
-            await setDoc(doc(db, "vaults", code), { name, pass, code, name_lower: name.toLowerCase() });
-            alert("Vault Registered!"); navigateTo('vaultAccessPage');
+            await setDoc(doc(db, "vaults", code), { name, pass, code });
+            alert("Universal ID Registered!"); navigateTo('vaultAccessPage');
         }
     };
 
@@ -197,7 +192,7 @@
         if(!chap || !file) return alert("Select File & Chapter");
         
         const upBtn = document.getElementById('upBtn');
-        upBtn.innerText = "Syncing with Hub...";
+        upBtn.innerText = "Broadcasting to Hub...";
         upBtn.disabled = true;
 
         const fd = new FormData(); fd.append("image", file);
@@ -208,13 +203,12 @@
             author: currentVault.name, 
             vault_code: currentVault.code, 
             subject: sub, chapter: chap, 
-            url: json.data.url,
-            created_at: Date.now() // Used for universal sorting
+            url: json.data.url 
         });
         
         upBtn.innerText = "UPLOAD TO HUB";
         upBtn.disabled = false;
-        alert("Upload Success!");
+        alert("Global Sync Complete!");
     };
 
     // --- HUB NAVIGATION ---
@@ -253,7 +247,7 @@
 
     async function loadGallery(name, code) {
         navigateTo('galleryPage');
-        const area = document.getElementById('notesArea'); area.innerHTML = "Opening...";
+        const area = document.getElementById('notesArea'); area.innerHTML = "Syncing...";
         const q = query(collection(db, "all_notes"), 
                     where("subject", "==", selSub), 
                     where("chapter", "==", selChap), 
@@ -265,7 +259,6 @@
 
     window.loadAdminDashboard = async () => {
         const list = document.getElementById('adminList');
-        list.innerHTML = "Syncing Vaults...";
         const snap = await getDocs(collection(db, "vaults"));
         list.innerHTML = "";
         snap.forEach(docSnap => {
@@ -275,5 +268,5 @@
     };
 </script>
 </body>
-                                                            </html>
-</html>
+    </html>
+                
