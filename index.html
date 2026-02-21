@@ -3,105 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mount Assisi Class 9 Notes</title>
+    <title>Mount Assisi Notes Vault</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --neon-blue: #00d2ff; --neon-purple: #9d50bb; --bg: #05070a; --glass: rgba(255, 255, 255, 0.05); }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #05070a 100%); color: #fff; margin: 0; min-height: 100vh; overflow-x: hidden; }
-        
-        .page { display: none; width: 100%; min-height: 100vh; padding: 40px 20px; box-sizing: border-box; animation: slideIn 0.4s ease-out; }
-        .active { display: flex; flex-direction: column; align-items: center; }
-
-        @keyframes slideIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
-
-        h1 { font-family: 'Orbitron', sans-serif; text-align: center; background: linear-gradient(to right, var(--neon-blue), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
-        
-        /* Navigation */
-        .card-container { display: flex; gap: 20px; margin-top: 50px; }
-        .menu-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 40px 60px; border-radius: 20px; cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; text-align: center; }
-        .menu-card:hover { border-color: var(--neon-blue); transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 210, 255, 0.2); }
-
-        /* Grid Layouts */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 800px; }
-        .item-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; cursor: pointer; transition: 0.2s; font-weight: 600; text-transform: uppercase; }
-        .item-btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
-
-        .back-btn { align-self: flex-start; margin-bottom: 20px; color: var(--neon-blue); cursor: pointer; font-weight: bold; text-decoration: none; border: 1px solid var(--neon-blue); padding: 5px 15px; border-radius: 5px; }
-
-        /* Form Styling */
-        .glass-box { background: var(--glass); padding: 30px; border-radius: 25px; width: 100%; max-width: 500px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #05070a 100%); color: #fff; margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        .page { display: none; width: 100%; min-height: 100vh; padding: 40px 20px; box-sizing: border-box; }
+        .active { display: flex; flex-direction: column; align-items: center; animation: zoomIn 0.3s ease; }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        h1 { font-family: 'Orbitron', sans-serif; text-align: center; background: linear-gradient(to right, var(--neon-blue), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
+        .vault-card { background: var(--glass); border: 2px solid rgba(255,255,255,0.1); padding: 50px; border-radius: 30px; cursor: pointer; backdrop-filter: blur(15px); text-align: center; margin: 20px; transition: 0.3s; width: 250px; }
+        .vault-card:hover { border-color: var(--neon-blue); box-shadow: 0 0 30px rgba(0, 210, 255, 0.3); }
+        .glass-box { background: var(--glass); padding: 30px; border-radius: 25px; width: 100%; max-width: 450px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
         input, select, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: #000; color: #fff; font-family: inherit; }
-        .submit-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); border: none; cursor: pointer; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase; margin-top: 20px; }
-
-        /* Notes Display */
-        .note-card { background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; box-sizing: border-box; }
-        .poster-info { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        .poster-name { font-weight: bold; color: var(--neon-blue); font-size: 1.1rem; }
-        .note-card img { width: 100%; border-radius: 15px; border: 2px solid var(--neon-purple); cursor: zoom-in; }
+        .submit-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); border: none; font-weight: bold; cursor: pointer; }
+        .note-card { background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; }
+        .note-card img { width: 100%; border-radius: 15px; border: 2px solid var(--neon-purple); }
+        .back-link { color: var(--neon-blue); cursor: pointer; margin-bottom: 20px; align-self: flex-start; }
     </style>
 </head>
 <body>
 
     <div id="homePage" class="page active">
-        <h1>MOUNT ASSISI CLASS 9 NOTES</h1>
-        <p style="color: #888; font-size: 1.1rem;">BY RETRO HOPE</p>
-        <div class="card-container">
-            <div class="menu-card" onclick="openPost()"><h2>POST</h2></div>
-            <div class="menu-card" onclick="navigateTo('subjectPage')"><h2>SEE</h2></div>
+        <h1>MOUNT ASSISI NOTES HUB</h1>
+        <p style="color: #888;">BY RETRO HOPE</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+            <div class="vault-card" onclick="startVaultFlow()"><h2>OPEN VAULT<br><small>(POST)</small></h2></div>
+            <div class="vault-card" onclick="navigateTo('subjectPage')"><h2>SEE HUB</h2></div>
         </div>
     </div>
 
-    <div id="postPage" class="page">
-        <div class="back-btn" onclick="navigateTo('homePage')">← BACK HOME</div>
+    <div id="vaultAccessPage" class="page">
+        <div class="back-link" onclick="navigateTo('homePage')">← EXIT</div>
         <div class="glass-box">
-            <h1 style="font-size: 1.5rem;">Upload Note</h1>
-            <input type="text" id="userName" placeholder="Your Unique Name">
+            <h1>VAULT ACCESS</h1>
+            <input type="text" id="vaultCode" placeholder="3-Digit Vault Code" maxlength="3">
+            <input type="text" id="vaultName" placeholder="Username">
+            <input type="password" id="vaultPass" placeholder="Vault Password">
+            <button class="submit-btn" onclick="accessVault()">OPEN VAULT</button>
+            <hr style="opacity: 0.1; margin: 20px 0;">
+            <button class="item-btn" style="background:none; border: 1px solid gray; width:100%;" onclick="navigateTo('createVaultPage')">CREATE NEW VAULT</button>
+        </div>
+    </div>
+
+    <div id="createVaultPage" class="page">
+        <div class="back-link" onclick="navigateTo('vaultAccessPage')">← BACK</div>
+        <div class="glass-box">
+            <h1>NEW VAULT</h1>
+            <input type="text" id="newCode" placeholder="3-Digit Code" maxlength="3">
+            <input type="text" id="newName" placeholder="Username">
+            <input type="password" id="newPass" placeholder="Set Password">
+            <button class="submit-btn" onclick="createNewVault()">REGISTER</button>
+        </div>
+    </div>
+
+    <div id="dashboardPage" class="page">
+        <div class="back-link" onclick="navigateTo('homePage')">← LOGOUT</div>
+        <h1 id="welcomeText">Vault Active</h1>
+        <div class="glass-box" style="margin-bottom: 20px;">
             <select id="postSubject">
-                <option value="">Select Subject</option>
                 <option>SST</option><option>G.K</option><option>Computer</option>
                 <option>H.LANG</option><option>Science</option><option>Eng Lit</option>
                 <option>Eng gra</option><option>Eng Lang</option><option>H.Lit</option><option>MATHS</option>
             </select>
-            <input type="text" id="postChapter" placeholder="Enter Chapter Name (e.g. Ch-1)">
-            <select id="postSource">
-                <option value="Copy">Handwritten (Copy)</option>
-                <option value="Book">Printed (Book)</option>
-            </select>
+            <input type="text" id="postChapter" placeholder="Chapter Name">
             <input type="file" id="imageInput" accept="image/*">
-            <button class="submit-btn" id="uploadBtn">PUBLISH TO HUB</button>
+            <button class="submit-btn" onclick="uploadNote()">PUBLISH</button>
         </div>
+        <div id="myNotesList" style="width:100%; max-width:450px;"></div>
     </div>
 
-    <div id="subjectPage" class="page">
-        <div class="back-btn" onclick="navigateTo('homePage')">← BACK</div>
-        <h1>Select Subject</h1>
-        <div class="grid" id="subjectGrid"></div>
-    </div>
-
-    <div id="chapterPage" class="page">
-        <div class="back-btn" onclick="navigateTo('subjectPage')">← BACK</div>
-        <h1 id="selectedSubTitle">Chapters</h1>
-        <div class="grid" id="chapterList"></div>
-    </div>
-
-    <div id="sourcePage" class="page">
-        <div class="back-btn" onclick="navigateTo('chapterPage')">← BACK</div>
-        <h1>Select Type</h1>
-        <div class="grid">
-            <div class="item-btn" onclick="viewFinalNotes('Book')">FROM BOOK</div>
-            <div class="item-btn" onclick="viewFinalNotes('Copy')">FROM COPY</div>
-        </div>
-    </div>
-
-    <div id="notesPage" class="page">
-        <div class="back-btn" onclick="navigateTo('sourcePage')">← BACK</div>
-        <h1 id="finalTitle">Notes Gallery</h1>
-        <div id="notesDisplayArea" style="width: 100%; max-width: 800px;"></div>
-    </div>
+    <div id="subjectPage" class="page"><div class="back-link" onclick="navigateTo('homePage')">← BACK</div><h1>Subjects</h1><div id="subjectGrid" style="width:100%; max-width:600px;"></div></div>
+    <div id="notesPage" class="page"><div class="back-link" onclick="navigateTo('subjectPage')">← BACK</div><h1 id="notesTitle">Notes</h1><div id="notesArea" style="width:100%; max-width:800px;"></div></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCo56hgaC3u_tBtS_bN0z2mrY9NQx0xZDg",
@@ -115,136 +92,88 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
+    let currentVault = null;
 
-    let currentSubject = "";
-    let currentChapter = "";
-
-    window.navigateTo = (pageId) => {
+    window.navigateTo = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
-        window.scrollTo(0,0);
+        document.getElementById(id).classList.add('active');
     };
 
-    // PASSWORD GATE
-    window.openPost = () => {
-        const access = prompt("Enter Secret Password to Post:");
-        if (access === "@777") {
-            navigateTo('postPage');
-        } else {
-            alert("Access Denied: Incorrect Password.");
-        }
+    window.startVaultFlow = () => {
+        if(prompt("Enter Hub Password:") === "@777") navigateTo('vaultAccessPage');
+        else alert("Unauthorized.");
     };
 
-    // 1. Initialize Subjects
-    const subs = ["SST", "G.K", "Computer", "H.LANG", "Science", "Eng Lit", "Eng gra", "Eng Lang", "H.Lit", "MATHS"];
-    const sGrid = document.getElementById('subjectGrid');
-    subs.forEach(s => {
-        const btn = document.createElement('div');
-        btn.className = 'item-btn';
-        btn.innerText = s;
-        btn.onclick = () => loadDynamicChapters(s);
-        sGrid.appendChild(btn);
-    });
+    window.createNewVault = async () => {
+        const code = document.getElementById('newCode').value;
+        const name = document.getElementById('newName').value;
+        const pass = document.getElementById('newPass').value;
+        if(code.length !== 3) return alert("Code must be 3 digits!");
+        const vaultRef = doc(db, "vaults", code);
+        const check = await getDoc(vaultRef);
+        if(check.exists()) return alert("Code taken!");
+        await setDoc(vaultRef, { name, pass, code });
+        alert("Vault Created!");
+        navigateTo('vaultAccessPage');
+    };
 
-    // 2. Load Chapters based on existing posts
-    async function loadDynamicChapters(sub) {
-        currentSubject = sub;
-        document.getElementById('selectedSubTitle').innerText = sub + " Chapters";
-        navigateTo('chapterPage');
-        
-        const list = document.getElementById('chapterList');
-        list.innerHTML = "<p>Scanning for posts...</p>";
+    window.accessVault = async () => {
+        const code = document.getElementById('vaultCode').value;
+        const name = document.getElementById('vaultName').value;
+        const pass = document.getElementById('vaultPass').value;
+        const vaultRef = doc(db, "vaults", code);
+        const snap = await getDoc(vaultRef);
+        if(snap.exists() && snap.data().name === name && snap.data().pass === pass) {
+            currentVault = snap.data();
+            loadVaultDashboard();
+            navigateTo('dashboardPage');
+        } else { alert("Invalid Credentials!"); }
+    };
 
-        const q = query(collection(db, "all_notes"), where("subject", "==", sub));
+    async function loadVaultDashboard() {
+        const list = document.getElementById('myNotesList');
+        const q = query(collection(db, "all_notes"), where("vault_code", "==", currentVault.code));
         const snap = await getDocs(q);
-        
-        const chapters = new Set();
-        snap.forEach(doc => chapters.add(doc.data().chapter));
-
         list.innerHTML = "";
-        if(chapters.size === 0) {
-            list.innerHTML = "<p>No chapters have been posted for this subject yet.</p>";
-            return;
-        }
-
-        chapters.forEach(ch => {
-            const btn = document.createElement('div');
-            btn.className = 'item-btn';
-            btn.innerText = ch;
-            btn.onclick = () => { currentChapter = ch; navigateTo('sourcePage'); };
-            list.appendChild(btn);
+        snap.forEach(d => {
+            list.innerHTML += `<div class="note-card"><p>${d.data().subject} - ${d.data().chapter}</p>
+            <button style="background:red" onclick="deleteNote('${d.id}')">Delete</button></div>`;
         });
     }
 
-    // 3. POSTING LOGIC
-    document.getElementById('uploadBtn').onclick = async () => {
-        const name = document.getElementById('userName').value.trim();
+    window.deleteNote = async (id) => {
+        if(confirm("Delete?")) { await deleteDoc(doc(db, "all_notes", id)); loadVaultDashboard(); }
+    };
+
+    window.uploadNote = async () => {
         const sub = document.getElementById('postSubject').value;
-        const chap = document.getElementById('postChapter').value.trim();
-        const src = document.getElementById('postSource').value;
+        const chap = document.getElementById('postChapter').value;
         const file = document.getElementById('imageInput').files[0];
-
-        if(!name || !chap || !file || !sub) return alert("Fill all info!");
-
-        const btn = document.getElementById('uploadBtn');
-        btn.innerText = "Processing...";
-        btn.disabled = true;
-
-        // Image Upload
-        const formData = new FormData();
-        formData.append("image", file);
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method: "POST", body: formData});
-        const img = await res.json();
-
-        // Save to Firebase
-        await addDoc(collection(db, "all_notes"), {
-            author: name,
-            author_lower: name.toLowerCase(),
-            subject: sub,
-            chapter: chap,
-            source: src,
-            url: img.data.url,
-            timestamp: new Date().getTime()
-        });
-
-        alert("Notes Published Successfully!");
-        location.reload();
+        if(!file || !chap) return alert("Missing data!");
+        const fd = new FormData(); fd.append("image", file);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method: "POST", body: fd});
+        const json = await res.json();
+        await addDoc(collection(db, "all_notes"), { author: currentVault.name, vault_code: currentVault.code, subject: sub, chapter: chap, url: json.data.url });
+        alert("Published!"); loadVaultDashboard();
     };
 
-    // 4. VIEW LOGIC
-    window.viewFinalNotes = async (sourceType) => {
+    // RESTORED FULL SUBJECT LIST
+    const subs = ["SST", "G.K", "Computer", "H.LANG", "Science", "Eng Lit", "Eng gra", "Eng Lang", "H.Lit", "MATHS"];
+    subs.forEach(s => {
+        const b = document.createElement('button'); b.className = "item-btn"; b.innerText = s;
+        b.onclick = () => viewNotes(s);
+        document.getElementById('subjectGrid').appendChild(b);
+    });
+
+    async function viewNotes(sub) {
         navigateTo('notesPage');
-        const area = document.getElementById('notesDisplayArea');
-        area.innerHTML = "<p>Fetching handwriting...</p>";
-        
-        const q = query(collection(db, "all_notes"), 
-            where("subject", "==", currentSubject),
-            where("chapter", "==", currentChapter),
-            where("source", "==", sourceType)
-        );
-        
+        const q = query(collection(db, "all_notes"), where("subject", "==", sub));
         const snap = await getDocs(q);
-        area.innerHTML = `<h2 style='text-align:center; color:var(--neon-blue)'>${currentSubject} - ${currentChapter}</h2>`;
-        
-        if(snap.empty) {
-            area.innerHTML += "<p style='text-align:center'>No notes found in this category.</p>";
-            return;
-        }
-
-        snap.forEach(doc => {
-            const d = doc.data();
-            area.innerHTML += `
-                <div class="note-card">
-                    <div class="poster-info">
-                        <span style="color:#888; font-size:0.8rem;">AUTHOR:</span>
-                        <span class="poster-name">${d.author}</span>
-                    </div>
-                    <img src="${d.url}" onclick="window.open('${d.url}', '_blank')">
-                </div>
-            `;
+        const area = document.getElementById('notesArea'); area.innerHTML = "";
+        snap.forEach(d => {
+            area.innerHTML += `<div class="note-card"><p>VAULT: ${d.data().vault_code} (By ${d.data().author})</p><img src="${d.data().url}"></div>`;
         });
-    };
+    }
 </script>
 </body>
-  </html>
-      
+</html>
