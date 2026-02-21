@@ -74,7 +74,7 @@
             <input type="file" id="imgInp" accept="image/*">
             <button class="submit-btn" id="upBtn" onclick="uploadNote()">UPLOAD TO HUB</button>
         </div>
-        <h2 style="font-size: 1rem; color: var(--neon-blue);">MY HISTORY (DELETE BLURRED)</h2>
+        <h2 style="font-size: 1rem; color: var(--neon-blue);">VAULT HISTORY (UNIVERSAL)</h2>
         <div id="myUploadsArea" style="width:100%; max-width:400px;"></div>
     </div>
 
@@ -93,7 +93,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, or } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCo56hgaC3u_tBtS_bN0z2mrY9NQx0xZDg",
@@ -111,6 +111,7 @@
 
     let currentVault = null;
     let selSub = ""; let selChap = "";
+    let historyUnsubscribe = null;
 
     window.navigateTo = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -126,41 +127,41 @@
         } else alert("Denied");
     };
 
-    // --- UPDATED HISTORY LOADER (Shows OLD and NEW posts) ---
-    async function loadMyUploads() {
-        const area = document.getElementById('myUploadsArea');
-        area.innerHTML = "<p>Scanning database history...</p>";
+    // --- FIX: UNIVERSAL LIVE HISTORY ---
+    // This function stays connected to the database to show history on ANY phone
+    function startHistoryListener(vaultCode) {
+        if (historyUnsubscribe) historyUnsubscribe();
         
-        // Search by vault code OR by author name to ensure old history appears
-        const q = query(collection(db, "all_notes"), 
-            or(
-                where("vault_code", "==", currentVault.code),
-                where("author", "==", currentVault.name)
-            )
+        const q = query(
+            collection(db, "all_notes"), 
+            where("vault_code", "==", vaultCode),
+            orderBy("created_at", "desc")
         );
-        
-        const snap = await getDocs(q);
-        area.innerHTML = "";
-        if(snap.empty) {
-            area.innerHTML = "<p style='color:#666;'>No history found. Try uploading a test file.</p>";
-            return;
-        }
-        snap.forEach(d => {
-            const data = d.data();
-            area.innerHTML += `<div class="note-card" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                <img src="${data.url}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
-                <div style="flex:1; font-size:0.8rem;">
-                    <b>${data.subject}</b><br>${data.chapter}
-                </div>
-                <button class="del-tag" onclick="deleteMyNote('${d.id}')">ERASE</button>
-            </div>`;
+
+        historyUnsubscribe = onSnapshot(q, (snap) => {
+            const area = document.getElementById('myUploadsArea');
+            area.innerHTML = "";
+            if (snap.empty) {
+                area.innerHTML = "<p style='color:#666;'>No history found for this ID.</p>";
+                return;
+            }
+            snap.forEach(d => {
+                const data = d.data();
+                area.innerHTML += `<div class="note-card" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <img src="${data.url}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
+                    <div style="flex:1; font-size:0.8rem;">
+                        <b>${data.subject}</b> - ${data.chapter}
+                    </div>
+                    <button class="del-tag" onclick="deleteMyNote('${d.id}')">ERASE</button>
+                </div>`;
+            });
         });
     }
 
     window.deleteMyNote = async (id) => {
-        if(confirm("Permanently delete this post from history?")) {
+        if(confirm("Erase this page from your vault?")) {
             await deleteDoc(doc(db, "all_notes", id));
-            loadMyUploads();
+            // History updates automatically due to the listener
         }
     };
 
@@ -168,12 +169,15 @@
         const code = document.getElementById('vCode').value;
         const pass = document.getElementById('vPass').value;
         const snap = await getDoc(doc(db, "vaults", code));
+        
         if(snap.exists() && snap.data().pass === pass) {
             currentVault = snap.data();
             document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
-            loadMyUploads(); // Loads history immediately upon login
+            startHistoryListener(currentVault.code); // Connect to universal history
             navigateTo('dashboardPage');
-        } else alert("Login Failed");
+        } else {
+            alert("ID not found or password wrong.");
+        }
     };
 
     window.registerUser = async () => {
@@ -182,7 +186,7 @@
         const pass = document.getElementById('rPass').value.trim();
         if(code.length === 3 && name && pass) {
             await setDoc(doc(db, "vaults", code), { name, pass, code, name_lower: name.toLowerCase() });
-            alert("Vault Created!"); navigateTo('vaultAccessPage');
+            alert("Vault Registered!"); navigateTo('vaultAccessPage');
         }
     };
 
@@ -191,20 +195,29 @@
         const chap = document.getElementById('pChap').value.trim();
         const file = document.getElementById('imgInp').files[0];
         if(!chap || !file) return alert("Select File & Chapter");
-        document.getElementById('upBtn').innerText = "Uploading...";
+        
+        const upBtn = document.getElementById('upBtn');
+        upBtn.innerText = "Syncing with Hub...";
+        upBtn.disabled = true;
+
         const fd = new FormData(); fd.append("image", file);
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method: "POST", body: fd});
         const json = await res.json();
+        
         await addDoc(collection(db, "all_notes"), { 
             author: currentVault.name, 
             vault_code: currentVault.code, 
             subject: sub, chapter: chap, 
-            url: json.data.url 
+            url: json.data.url,
+            created_at: Date.now() // Used for universal sorting
         });
-        document.getElementById('upBtn').innerText = "UPLOAD TO HUB";
-        loadMyUploads(); alert("History Updated!");
+        
+        upBtn.innerText = "UPLOAD TO HUB";
+        upBtn.disabled = false;
+        alert("Upload Success!");
     };
 
+    // --- HUB NAVIGATION ---
     const subs = ["SST", "G.K", "Computer", "H.LANG", "Science", "Eng Lit", "Eng gra", "Eng Lang", "H.Lit", "MATHS"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
@@ -213,7 +226,7 @@
 
     async function loadChapters(sub) {
         selSub = sub; navigateTo('chapterPage');
-        const grid = document.getElementById('chapGrid'); grid.innerHTML = "Loading...";
+        const grid = document.getElementById('chapGrid'); grid.innerHTML = "Syncing...";
         const q = query(collection(db, "all_notes"), where("subject", "==", sub));
         const snap = await getDocs(q);
         const chaps = new Set(); snap.forEach(d => chaps.add(d.data().chapter));
@@ -226,7 +239,7 @@
 
     async function loadPosters(chap) {
         selChap = chap; navigateTo('posterListPage');
-        const grid = document.getElementById('posterGrid'); grid.innerHTML = "Loading...";
+        const grid = document.getElementById('posterGrid'); grid.innerHTML = "Syncing...";
         const q = query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", chap));
         const snap = await getDocs(q);
         const users = new Map();
@@ -252,7 +265,7 @@
 
     window.loadAdminDashboard = async () => {
         const list = document.getElementById('adminList');
-        list.innerHTML = "Loading...";
+        list.innerHTML = "Syncing Vaults...";
         const snap = await getDocs(collection(db, "vaults"));
         list.innerHTML = "";
         snap.forEach(docSnap => {
@@ -262,5 +275,5 @@
     };
 </script>
 </body>
-            </html>
-                
+                                                            </html>
+</html>
