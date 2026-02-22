@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mount Assisi Notes Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
     <style>
         :root { --neon-blue: #00d2ff; --neon-purple: #9d50bb; --bg: #05070a; --glass: rgba(255, 255, 255, 0.05); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Poppins', sans-serif; background: var(--bg); background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #05070a 100%); color: #fff; }
@@ -17,12 +20,26 @@
         .item-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 600; text-transform: uppercase; color: #fff; transition: 0.2s; }
         .item-btn:active { background: var(--neon-blue); color: #000; }
         .glass-box { background: var(--glass); padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 20px;}
-        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #000; color: #fff; font-family: inherit; }
+        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #000; color: #fff; font-family: inherit; box-sizing: border-box; }
         .submit-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); border: none; font-weight: bold; cursor: pointer;}
-        .note-card { background: var(--glass); padding: 10px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 15px; }
-        .note-card img { width: 100%; border-radius: 10px; border: 1px solid var(--neon-purple); }
+        .note-card { background: var(--glass); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; box-sizing: border-box; }
+        .note-card img { width: 100%; border-radius: 10px; border: 1px solid var(--neon-purple); margin-bottom: 10px; }
         .back-btn { align-self: flex-start; margin-bottom: 15px; color: var(--neon-blue); font-weight: bold; cursor: pointer; }
         .del-tag { background: #ff4d4d; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.7rem; cursor: pointer; border: none; margin-top: 5px; }
+        
+        .notice-board { width: 100%; max-width: 400px; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 10px; border-radius: 10px; margin-bottom: 20px; box-sizing: border-box;}
+        @keyframes scrollText { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
+        .scroll-box { overflow: hidden; white-space: nowrap; width: 100%; margin-top: 5px; }
+        .scroll-text { display: inline-block; padding-left: 100%; animation: scrollText 15s linear infinite; color: white; font-weight: bold; }
+        
+        .comment-area { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .comment-msg { font-size: 0.8rem; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        .comment-input-grp { display: flex; gap: 5px; margin-top: 10px; }
+        .comment-input-grp input { margin: 0; padding: 10px; font-size: 0.8rem; }
+        .comment-input-grp button { margin: 0; padding: 10px; width: auto; background: var(--neon-blue); color: black; font-weight: bold; }
+        
+        /* Album Controls */
+        .album-ctrl { background: #444; border:none; color:white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -32,10 +49,34 @@
     <div id="homePage" class="page active">
         <h1>MOUNT ASSISI NOTES HUB</h1>
         <p style="color: #888; font-size: 0.8rem;">BY RETRO HOPE</p>
-        <div style="display:flex; gap:15px; margin-top:30px; width: 100%; max-width: 400px;">
-            <div class="item-btn" style="flex: 1; padding: 30px;" onclick="startVaultFlow()">POST</div>
-            <div class="item-btn" style="flex: 1; padding: 30px;" onclick="navigateTo('subjectPage')">SEE</div>
+        
+        <div class="notice-board">
+            <strong style="color: #ff4d4d; font-size: 0.8rem;">ADMIN ANNOUNCEMENT:</strong>
+            <div class="scroll-box">
+                <div id="noticeText" class="scroll-text">Welcome to the Hub! Connect your vault to post.</div>
+            </div>
         </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px; width: 100%; max-width: 400px;">
+            <div style="display:flex; gap:12px;">
+                <div class="item-btn" style="flex: 1; padding: 25px;" onclick="startVaultFlow()">POST</div>
+                <div class="item-btn" style="flex: 1; padding: 25px;" onclick="navigateTo('subjectPage')">SEE</div>
+            </div>
+            <div class="item-btn" style="padding: 15px; background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="openWantedBoard()">🎯 WANTED BOARD (REQUESTS)</div>
+        </div>
+    </div>
+
+    <div id="wantedPage" class="page">
+        <div class="back-btn" onclick="navigateTo('homePage')">← BACK</div>
+        <h1 style="color: #ffaa00;">WANTED NOTES</h1>
+        <p style="text-align:center; font-size:0.8rem; color:#888;">Request missing chapters here.</p>
+        
+        <div class="glass-box" style="border-color: #ffaa00;">
+            <input type="text" id="reqInput" placeholder="E.g., Need Science Ch-4 urgently!">
+            <button class="submit-btn" style="background: #ffaa00; color: black;" onclick="postWantedRequest()">SUBMIT REQUEST</button>
+        </div>
+        
+        <div id="wantedList" style="width: 100%; max-width: 400px;"></div>
     </div>
 
     <div id="vaultAccessPage" class="page">
@@ -64,17 +105,30 @@
     <div id="dashboardPage" class="page">
         <div class="back-btn" onclick="navigateTo('homePage')">← EXIT</div>
         <h1 id="userTitle">Vault</h1>
+        
         <div class="glass-box">
+            <h2 style="font-size: 1rem; color: #fff; margin-top:0;">UPLOAD NOTES</h2>
             <select id="pSub">
                 <option>SST</option><option>G.K</option><option>Computer</option>
                 <option>H.LANG</option><option>Science</option><option>Eng Lit</option>
                 <option>Eng gra</option><option>Eng Lang</option><option>H.Lit</option><option>MATHS</option>
             </select>
             <input type="text" id="pChap" placeholder="Chapter Name (e.g. Ch-1)">
-            <input type="file" id="imgInp" accept="image/*">
-            <button class="submit-btn" id="upBtn" onclick="uploadNote()">UPLOAD TO HUB</button>
+            <p style="font-size:0.8rem; color:#aaa; margin:5px 0 0 0;">Select images OR a PDF file.</p>
+            <input type="file" id="imgInp" accept="image/*,application/pdf" multiple>
+            
+            <label style="display:flex; align-items:center; gap:10px; margin: 15px 0; font-size: 0.9rem; color: #aaa; cursor:pointer;">
+                <input type="checkbox" id="ghostCheck" style="width:20px; height:20px; margin:0;">
+                Post as Anonymous (Ghost Mode 👻)
+            </label>
+
+            <button class="submit-btn" id="upBtn" onclick="uploadNote()">BROADCAST TO HUB</button>
         </div>
-        <h2 style="font-size: 1rem; color: var(--neon-blue); text-align: center;">GLOBAL VAULT HISTORY</h2>
+
+        <h2 style="font-size: 1rem; color: var(--neon-purple); text-align: center;">MY ALERTS</h2>
+        <div id="myMessagesArea" style="width:100%; max-width:400px; margin-bottom: 20px;"></div>
+
+        <h2 style="font-size: 1rem; color: var(--neon-blue); text-align: center;">MY HISTORY</h2>
         <div id="myUploadsArea" style="width:100%; max-width:400px;"></div>
     </div>
 
@@ -85,7 +139,14 @@
 
     <div id="adminPage" class="page">
         <div class="back-btn" onclick="navigateTo('homePage')">← CLOSE</div>
-        <h1 style="color: #ff4d4d;">ADMIN TERMINAL</h1>
+        <h1 style="color: #ff4d4d; text-shadow: 0 0 10px red;">ADMIN OVERRIDE</h1>
+        
+        <div class="glass-box" style="border-color: #ff4d4d;">
+            <h2 style="font-size: 1rem; color: #ff4d4d; margin-top:0;">UPDATE NOTICE BOARD</h2>
+            <input type="text" id="adminNoticeInput" placeholder="Type new announcement...">
+            <button class="submit-btn" style="background: #ff4d4d;" onclick="updateNotice()">BROADCAST</button>
+        </div>
+
         <div id="adminList" style="width: 100%; max-width: 600px;"></div>
     </div>
 
@@ -109,15 +170,26 @@
     const db = getFirestore(app);
     const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
 
+    // Setup PDF JS Worker
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
     let currentVault = null;
     let liveSync = null;
+    let messageSync = null;
+    let wantedSync = null;
     let selSub = ""; 
     let selChap = "";
+    let activeCommentListeners = [];
+    window.loadedAlbums = {}; 
 
-    // --- PROPER NAVIGATION FUNCTION ---
     const navigateTo = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
+        if(id !== 'galleryPage') {
+            activeCommentListeners.forEach(unsub => unsub());
+            activeCommentListeners = [];
+        }
     };
     window.navigateTo = navigateTo;
 
@@ -130,40 +202,120 @@
         } else alert("Denied");
     };
 
-    // --- GLOBAL SYNC ENGINE ---
+    // --- NOTICE & WANTED BOARD ---
+    onSnapshot(doc(db, "system", "notice"), (docSnap) => {
+        if(docSnap.exists()) document.getElementById('noticeText').innerText = docSnap.data().text;
+    });
+
+    window.updateNotice = async () => {
+        const txt = document.getElementById('adminNoticeInput').value;
+        if(!txt) return alert("Write a notice first!");
+        await setDoc(doc(db, "system", "notice"), { text: txt });
+        document.getElementById('adminNoticeInput').value = "";
+        alert("Notice Broadcasted!");
+    };
+
+    window.openWantedBoard = () => {
+        navigateTo('wantedPage');
+        if(wantedSync) wantedSync();
+        wantedSync = onSnapshot(collection(db, "wanted"), (snap) => {
+            const list = document.getElementById('wantedList');
+            list.innerHTML = "";
+            if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#888;'>No active requests.</p>"; return; }
+            snap.forEach(d => {
+                const req = d.data();
+                let adminBtn = currentVault && currentVault.name === "Retro Hope" ? `<button onclick="resolveRequest('${d.id}')" style="background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:5px; margin-top:10px; cursor:pointer;">RESOLVE</button>` : "";
+                list.innerHTML += `<div class="glass-box" style="padding:15px; border-color:#ffaa00; margin-bottom:10px;"><span style="color:#ffaa00; font-weight:bold;">${req.author} asks:</span><br>${req.text}<br>${adminBtn}</div>`;
+            });
+        });
+    };
+    window.postWantedRequest = async () => {
+        const txt = document.getElementById('reqInput').value.trim();
+        if(!txt) return;
+        const author = currentVault ? currentVault.name : prompt("Enter your name:");
+        if(!author) return;
+        await addDoc(collection(db, "wanted"), { author: author, text: txt });
+        document.getElementById('reqInput').value = "";
+    };
+    window.resolveRequest = async (id) => { if(confirm("Remove request?")) await deleteDoc(doc(db, "wanted", id)); };
+
+    // --- INBOX SYSTEM ---
+    function enableMessageSync(vaultCode) {
+        if(messageSync) messageSync();
+        const q = query(collection(db, "messages"), where("to_code", "==", vaultCode));
+        messageSync = onSnapshot(q, (snap) => {
+            const area = document.getElementById('myMessagesArea');
+            area.innerHTML = "";
+            if(snap.empty) { area.innerHTML = "<p style='color:#666; text-align:center;'>Inbox is empty.</p>"; return; }
+            snap.forEach(d => {
+                const msg = d.data();
+                area.innerHTML += `<div class="glass-box" style="padding:15px; margin-bottom:10px; border-color:var(--neon-purple);"><strong style="color:var(--neon-purple);">${msg.from}:</strong><br><span style="font-size:0.9rem;">${msg.text}</span><br><button onclick="deleteMessage('${d.id}')" style="background:#444; color:white; padding:5px 15px; border-radius:5px; margin-top:10px; border:none; cursor:pointer;">Clear Alert</button></div>`;
+            });
+        });
+    }
+    window.deleteMessage = async (id) => await deleteDoc(doc(db, "messages", id));
+    window.sendMessageToPoster = async (toCode, posterName) => {
+        const senderName = currentVault ? currentVault.name : prompt("Your name:");
+        if(!senderName) return;
+        const msg = prompt(`What do you want to say to ${posterName}?`);
+        if(!msg) return;
+        await addDoc(collection(db, "messages"), { to_code: toCode, from: senderName, text: msg });
+        alert("Sent!");
+    };
+    window.reportBlurry = async (toCode, sub, chap) => {
+        if(confirm("Report blurry?")) {
+            await addDoc(collection(db, "messages"), { to_code: toCode, from: "SYSTEM FLAG 🚩", text: `Your ${sub} (${chap}) note was reported blurry. Please replace it!` });
+            alert("Reported.");
+        }
+    };
+
+    // --- ADMIN POWERS ---
+    window.loadAdminDashboard = async () => {
+        const list = document.getElementById('adminList');
+        const snap = await getDocs(collection(db, "vaults"));
+        list.innerHTML = "";
+        snap.forEach(docSnap => {
+            const user = docSnap.data();
+            list.innerHTML += `<div class="glass-box" style="border-color: #ff4d4d; padding: 15px;">
+                <h3 style="margin-top:0; color:#ff4d4d;">${user.name}</h3><p>Code: ${user.code} | Pass: ${user.pass}</p>
+                <div style="display:flex; gap:10px;"><button class="submit-btn" style="background:#444; flex:1;" onclick="adminViewPosts('${user.code}')">POSTS</button><button class="submit-btn" style="background:#ff4d4d; flex:1;" onclick="forcePurge('${user.code}', '${user.name}')">PURGE</button></div>
+                <div id="adminPosts_${user.code}" style="margin-top:10px; font-size:0.9rem; color:#aaa;"></div></div>`;
+        });
+    };
+    window.adminViewPosts = async (code) => {
+        const div = document.getElementById(`adminPosts_${code}`);
+        const q = query(collection(db, "all_notes"), where("vault_code", "==", code));
+        const snap = await getDocs(q);
+        div.innerHTML = `Posts: ${snap.size}<br>`;
+        snap.forEach(d => { div.innerHTML += `- ${d.data().subject} (${d.data().chapter})<br>`; });
+    };
+    window.forcePurge = async (code, userName) => {
+        if(prompt("TYPE PURGE") !== "PURGE") return;
+        await deleteDoc(doc(db, "vaults", code));
+        const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
+        snap.forEach(async (d) => await deleteDoc(doc(db, "all_notes", d.id)));
+        alert("Purged."); loadAdminDashboard(); 
+    };
+
+    // --- GLOBAL SYNC & LOGIN ---
     function enableGlobalSync(vaultCode) {
         if (liveSync) liveSync(); 
-        
         const q = query(collection(db, "all_notes"), where("vault_code", "==", vaultCode));
-
         liveSync = onSnapshot(q, (snap) => {
             const area = document.getElementById('myUploadsArea');
             area.innerHTML = "";
-            if (snap.empty) {
-                area.innerHTML = "<p style='color:#666; text-align:center;'>Vault history is currently empty globally.</p>";
-                return;
-            }
             snap.forEach(d => {
                 const data = d.data();
+                const thumb = data.urls ? data.urls[0] : data.url;
                 area.innerHTML += `<div class="note-card" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <img src="${data.url}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
-                    <div style="flex:1; font-size:0.8rem;">
-                        <b>${data.subject}</b> - ${data.chapter}
-                    </div>
+                    <img src="${thumb}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; margin:0;">
+                    <div style="flex:1; font-size:0.8rem;"><b>${data.subject}</b> - ${data.chapter}<br><i>${data.urls ? data.urls.length+' Pages' : ''}</i></div>
                     <button class="del-tag" onclick="deleteGlobalNote('${d.id}')">ERASE</button>
                 </div>`;
             });
-        }, (error) => {
-            console.error("Sync Error:", error);
-            document.getElementById('myUploadsArea').innerHTML = "<p style='color:red;'>Database Rules are blocking your history.</p>";
         });
     }
-
-    window.deleteGlobalNote = async (id) => {
-        if(confirm("Erase from global history?")) {
-            await deleteDoc(doc(db, "all_notes", id));
-        }
-    };
+    window.deleteGlobalNote = async (id) => { if(confirm("Erase forever?")) await deleteDoc(doc(db, "all_notes", id)); };
 
     window.loginVault = async () => {
         const code = document.getElementById('vCode').value;
@@ -171,10 +323,12 @@
         const snap = await getDoc(doc(db, "vaults", code));
         if(snap.exists() && snap.data().pass === pass) {
             currentVault = snap.data();
+            if(currentVault.code === "777") currentVault.name = "Retro Hope"; 
             document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
             enableGlobalSync(currentVault.code); 
+            enableMessageSync(currentVault.code); 
             navigateTo('dashboardPage');
-        } else alert("Invalid ID or Password");
+        } else alert("Invalid ID");
     };
 
     window.registerUser = async () => {
@@ -183,37 +337,77 @@
         const pass = document.getElementById('rPass').value.trim();
         if(code.length === 3 && name && pass) {
             await setDoc(doc(db, "vaults", code), { name, pass, code });
-            alert("Universal ID Registered!"); navigateTo('vaultAccessPage');
+            alert("ID Registered!"); navigateTo('vaultAccessPage');
         }
     };
 
+    // --- MASSIVE PDF & MULTI-IMAGE UPLOADER ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
         const chap = document.getElementById('pChap').value.trim();
-        const file = document.getElementById('imgInp').files[0];
-        if(!chap || !file) return alert("Select File & Chapter");
+        const files = document.getElementById('imgInp').files;
+        if(!chap || files.length === 0) return alert("Select File & Chapter");
         
+        const isGhost = document.getElementById('ghostCheck').checked;
+        const displayName = isGhost ? "Ghost Poster 👻" : currentVault.name;
         const upBtn = document.getElementById('upBtn');
-        upBtn.innerText = "Broadcasting to Hub...";
         upBtn.disabled = true;
 
-        const fd = new FormData(); fd.append("image", file);
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method: "POST", body: fd});
-        const json = await res.json();
+        let finalB64Images = [];
+
+        for(let i=0; i<files.length; i++) {
+            let file = files[i];
+            if(file.type === "application/pdf") {
+                upBtn.innerText = "Processing PDF...";
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                for(let pageNum=1; pageNum<=pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({scale: 1.5});
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({canvasContext: ctx, viewport: viewport}).promise;
+                    finalB64Images.push(canvas.toDataURL("image/jpeg").split(',')[1]);
+                }
+            } else {
+                upBtn.innerText = "Processing Image...";
+                const b64 = await new Promise(res => {
+                    const reader = new FileReader();
+                    reader.onload = () => res(reader.result.split(',')[1]);
+                    reader.readAsDataURL(file);
+                });
+                finalB64Images.push(b64);
+            }
+        }
+
+        let uploadedUrls = [];
+        for(let i=0; i<finalB64Images.length; i++) {
+            upBtn.innerText = `Sending to Hub (${i+1}/${finalB64Images.length})...`;
+            const fd = new FormData(); fd.append("image", finalB64Images[i]);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method: "POST", body: fd});
+            const json = await res.json();
+            uploadedUrls.push(json.data.url);
+        }
         
         await addDoc(collection(db, "all_notes"), { 
             author: currentVault.name, 
+            display_author: displayName, 
             vault_code: currentVault.code, 
             subject: sub, chapter: chap, 
-            url: json.data.url 
+            urls: uploadedUrls,
+            created_at: Date.now()
         });
         
-        upBtn.innerText = "UPLOAD TO HUB";
+        upBtn.innerText = "BROADCAST TO HUB";
         upBtn.disabled = false;
-        alert("Global Sync Complete!");
+        document.getElementById('imgInp').value = ""; 
+        document.getElementById('ghostCheck').checked = false;
+        alert("Upload Complete! Album created.");
     };
 
-    // --- HUB NAVIGATION (FIXED ROUTING) ---
+    // --- HUB VIEWER ---
     const subs = ["SST", "G.K", "Computer", "H.LANG", "Science", "Eng Lit", "Eng gra", "Eng Lang", "H.Lit", "MATHS"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
@@ -223,80 +417,109 @@
     async function loadChapters(sub) {
         selSub = sub; navigateTo('chapterPage');
         const grid = document.getElementById('chapGrid'); grid.innerHTML = "Syncing...";
-        try {
-            const q = query(collection(db, "all_notes"), where("subject", "==", sub));
-            const snap = await getDocs(q);
-            const chaps = new Set(); snap.forEach(d => chaps.add(d.data().chapter));
-            grid.innerHTML = "";
-            
-            if(chaps.size === 0) {
-                grid.innerHTML = "<p style='text-align:center; color:#888;'>No notes found for this subject yet.</p>";
-                return;
-            }
-
-            chaps.forEach(c => {
-                const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
-                b.onclick = () => loadPosters(c); grid.appendChild(b);
-            });
-        } catch (error) {
-            grid.innerHTML = "<p style='color:red; text-align:center;'>Database Access Denied. Check Firestore Rules.</p>";
-        }
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", sub)));
+        const chaps = new Set(); snap.forEach(d => chaps.add(d.data().chapter));
+        grid.innerHTML = "";
+        chaps.forEach(c => {
+            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
+            b.onclick = () => loadPosters(c); grid.appendChild(b);
+        });
     }
 
     async function loadPosters(chap) {
         selChap = chap; navigateTo('posterListPage');
         const grid = document.getElementById('posterGrid'); grid.innerHTML = "Syncing...";
-        try {
-            const q = query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", chap));
-            const snap = await getDocs(q);
-            const users = new Map();
-            snap.forEach(d => users.set(d.data().vault_code, d.data().author));
-            grid.innerHTML = "";
-            
-            if(users.size === 0) {
-                grid.innerHTML = "<p style='text-align:center; color:#888;'>No posters found.</p>";
-                return;
-            }
-
-            users.forEach((name, code) => {
-                const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "Notes by " + name;
-                b.onclick = () => loadGallery(name, code); grid.appendChild(b);
-            });
-        } catch (error) {
-            grid.innerHTML = "<p style='color:red; text-align:center;'>Database Access Denied.</p>";
-        }
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", chap)));
+        const users = new Map();
+        snap.forEach(d => {
+            const data = d.data();
+            const dName = data.display_author || data.author;
+            users.set(data.vault_code + "_" + dName, { name: dName, code: data.vault_code });
+        });
+        grid.innerHTML = "";
+        users.forEach((userData, key) => {
+            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "Notes by " + userData.name;
+            b.onclick = () => loadGallery(userData.name, userData.code); grid.appendChild(b);
+        });
     }
+
+    // ALBUM SLIDER LOGIC
+    window.changePage = (id, dir) => {
+        const img = document.getElementById(`img_${id}`);
+        const txt = document.getElementById(`pageTxt_${id}`);
+        let urls = window.loadedAlbums[id];
+        let curIdx = parseInt(img.getAttribute('data-index'));
+        let nextIdx = curIdx + dir;
+        if(nextIdx >= 0 && nextIdx < urls.length) {
+            img.src = urls[nextIdx];
+            img.setAttribute('data-index', nextIdx);
+            txt.innerText = `Pg ${nextIdx + 1} / ${urls.length}`;
+        }
+    };
 
     async function loadGallery(name, code) {
         navigateTo('galleryPage');
         const area = document.getElementById('notesArea'); area.innerHTML = "Opening...";
-        try {
-            const q = query(collection(db, "all_notes"), 
-                        where("subject", "==", selSub), 
-                        where("chapter", "==", selChap), 
-                        where("vault_code", "==", code));
-            const snap = await getDocs(q);
-            area.innerHTML = `<h2 style="text-align:center">${selSub}: ${selChap}</h2><p style="text-align:center; color:#888;">Student: ${name}</p>`;
-            
-            if(snap.empty) {
-                area.innerHTML += "<p style='text-align:center; color:#888;'>Images failed to load.</p>";
-                return;
-            }
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", selChap), where("vault_code", "==", code)));
+        
+        let htmlBuild = `<h2 style="text-align:center">${selSub}: ${selChap}</h2><p style="text-align:center; color:#888;">Student: ${name}</p>`;
+        if(name !== "Ghost Poster 👻") htmlBuild += `<button class="submit-btn" style="width:100%; max-width:400px; margin-bottom:20px; font-size:0.9rem;" onclick="sendMessageToPoster('${code}', '${name}')">✉️ MESSAGE POSTER</button>`;
 
-            snap.forEach(d => area.innerHTML += `<div class="note-card"><img src="${d.data().url}"></div>`);
-        } catch (error) {
-            area.innerHTML = "<p style='color:red; text-align:center;'>Database Access Denied.</p>";
-        }
+        if(snap.empty) { area.innerHTML = htmlBuild + "<p>Failed to load.</p>"; return; }
+
+        const noteIds = [];
+        snap.forEach(d => {
+            const data = d.data();
+            if((data.display_author || data.author) !== name) return; 
+            
+            noteIds.push(d.id);
+            window.loadedAlbums[d.id] = data.urls || [data.url]; 
+            let firstImg = window.loadedAlbums[d.id][0];
+            let isAlbum = window.loadedAlbums[d.id].length > 1;
+
+            let albumControls = isAlbum ? `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <button class="album-ctrl" onclick="changePage('${d.id}', -1)">◀</button>
+                    <span id="pageTxt_${d.id}" style="font-size:0.8rem; font-weight:bold;">Pg 1 / ${window.loadedAlbums[d.id].length}</span>
+                    <button class="album-ctrl" onclick="changePage('${d.id}', 1)">▶</button>
+                </div>` : "";
+
+            htmlBuild += `
+            <div class="note-card">
+                ${albumControls}
+                <img id="img_${d.id}" src="${firstImg}" data-index="0">
+                <button style="width:100%; padding:10px; background:rgba(255, 77, 77, 0.2); color:#ff4d4d; border:1px solid #ff4d4d; border-radius:5px; font-weight:bold; cursor:pointer; margin-bottom:10px;" onclick="reportBlurry('${code}', '${selSub}', '${selChap}')">🚩 REPORT BLURRY</button>
+                
+                <div class="comment-area" id="comments_${d.id}">Loading comments...</div>
+                <div class="comment-input-grp">
+                    <input type="text" id="commInput_${d.id}" placeholder="Ask a question..." style="flex:1;">
+                    <button onclick="postComment('${d.id}')">POST</button>
+                </div>
+            </div>`;
+        });
+        area.innerHTML = htmlBuild;
+        noteIds.forEach(id => startCommentListener(id));
     }
 
-    window.loadAdminDashboard = async () => {
-        const list = document.getElementById('adminList');
-        const snap = await getDocs(collection(db, "vaults"));
-        list.innerHTML = "";
-        snap.forEach(docSnap => {
-            const user = docSnap.data();
-            list.innerHTML += `<div class="glass-box"><h3>${user.name} (${user.code})</h3><p>Pass: ${user.pass}</p></div>`;
+    // --- COMMENTS ---
+    function startCommentListener(noteId) {
+        const unsub = onSnapshot(query(collection(db, "comments"), where("note_id", "==", noteId)), (snap) => {
+            const div = document.getElementById(`comments_${noteId}`);
+            if(!div) return;
+            div.innerHTML = "";
+            if(snap.empty) { div.innerHTML = "<i style='color:#666; font-size:0.8rem;'>No comments. Be the first!</i>"; return; }
+            snap.forEach(d => { const c = d.data(); div.innerHTML += `<div class="comment-msg"><b style="color:var(--neon-blue);">${c.author}:</b> ${c.text}</div>`; });
+            div.scrollTop = div.scrollHeight;
         });
+        activeCommentListeners.push(unsub);
+    }
+    window.postComment = async (noteId) => {
+        const text = document.getElementById(`commInput_${noteId}`).value.trim();
+        if(!text) return;
+        const author = currentVault ? currentVault.name : prompt("Name to comment:");
+        if(!author) return;
+        await addDoc(collection(db, "comments"), { note_id: noteId, author: author, text: text });
+        document.getElementById(`commInput_${noteId}`).value = "";
     };
 </script>
 </body>
