@@ -19,7 +19,7 @@
         .grid { display: grid; grid-template-columns: 1fr; gap: 12px; width: 100%; max-width: 400px; }
         .item-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 600; text-transform: uppercase; color: #fff; transition: 0.2s; }
         .item-btn:active { background: var(--neon-blue); color: #000; }
-        .glass-box { background: var(--glass); padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 20px;}
+        .glass-box { background: var(--glass); padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 20px; box-sizing: border-box;}
         input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #000; color: #fff; font-family: inherit; box-sizing: border-box; }
         .submit-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); border: none; font-weight: bold; cursor: pointer;}
         .note-card { background: var(--glass); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; box-sizing: border-box; }
@@ -32,13 +32,11 @@
         .scroll-box { overflow: hidden; white-space: nowrap; width: 100%; margin-top: 5px; }
         .scroll-text { display: inline-block; padding-left: 100%; animation: scrollText 15s linear infinite; color: white; font-weight: bold; }
         
-        .comment-area { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .comment-area { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 0.8rem; }
         .comment-msg { font-size: 0.8rem; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
         .comment-input-grp { display: flex; gap: 5px; margin-top: 10px; }
         .comment-input-grp input { margin: 0; padding: 10px; font-size: 0.8rem; }
         .comment-input-grp button { margin: 0; padding: 10px; width: auto; background: var(--neon-blue); color: black; font-weight: bold; }
-        
-        /* Album Controls */
         .album-ctrl { background: #444; border:none; color:white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;}
     </style>
 </head>
@@ -46,72 +44,78 @@
 
 <div id="app-container">
 
-    <div id="homePage" class="page active">
-        <h1>MOUNT ASSISI NOTES HUB</h1>
-        <p style="color: #888; font-size: 0.8rem;">BY RETRO HOPE</p>
+    <div id="gatePage" class="page active">
+        <h1 style="margin-top: 20vh; font-size: 2rem; color: var(--neon-blue);">WHO ARE YOU?</h1>
+        <p style="color: #888; text-align: center; margin-bottom: 30px;">Identify yourself to enter.</p>
+        <div class="glass-box">
+            <h2 style="margin-top:0; font-size:1rem; text-align:center;">LOGIN</h2>
+            <input type="text" id="gCode" placeholder="3-Digit Code" maxlength="3">
+            <input type="password" id="gPass" placeholder="Password">
+            <button class="submit-btn" onclick="window.gateLogin()">ENTER HUB</button>
+            <p style="text-align:center; font-size:0.8rem; margin:10px 0;">OR</p>
+            <button style="background:none; border:1px solid #444;" onclick="window.navigateTo('registerPage')">CREATE NEW ID</button>
+        </div>
+        <p style="font-size: 0.7rem; color: #444; text-align:center;">System Secure | Encrypted</p>
+    </div>
+
+    <div id="registerPage" class="page">
+        <div class="back-btn" onclick="window.navigateTo('gatePage')">← BACK</div>
+        <div class="glass-box">
+            <h1>NEW ID</h1>
+            <input type="text" id="rName" placeholder="Full Name">
+            <input type="text" id="rCode" placeholder="Pick 3-Digit Code" maxlength="3">
+            <input type="password" id="rPass" placeholder="Set Password">
+            <button class="submit-btn" onclick="window.registerUser()">REGISTER & ENTER</button>
+        </div>
+    </div>
+
+    <div id="homePage" class="page">
+        <h1>NOTES HUB</h1>
+        <p style="color:#888; font-size:0.8rem;">Welcome, <span id="userDisplay" style="color:var(--neon-blue);">Guest</span></p>
         
         <div class="notice-board">
             <strong style="color: #ff4d4d; font-size: 0.8rem;">ADMIN ANNOUNCEMENT:</strong>
-            <div class="scroll-box">
-                <div id="noticeText" class="scroll-text">Welcome to the Hub! Connect your vault to post.</div>
-            </div>
+            <div class="scroll-box"><div id="noticeText" class="scroll-text">Syncing...</div></div>
         </div>
 
         <div style="display:flex; flex-direction:column; gap:12px; width: 100%; max-width: 400px;">
             <div style="display:flex; gap:12px;">
-                <div class="item-btn" style="flex: 1; padding: 25px;" onclick="startVaultFlow()">POST</div>
-                <div class="item-btn" style="flex: 1; padding: 25px;" onclick="navigateTo('subjectPage')">SEE</div>
+                <div class="item-btn" style="flex: 1;" onclick="window.startVaultFlow()">POST</div>
+                <div class="item-btn" style="flex: 1;" onclick="window.navigateTo('subjectPage')">SEE</div>
             </div>
-            <div class="item-btn" style="padding: 15px; background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="openWantedBoard()">🎯 WANTED BOARD (REQUESTS)</div>
+            <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.openWantedBoard()">🎯 WANTED BOARD</div>
         </div>
     </div>
 
     <div id="wantedPage" class="page">
-        <div class="back-btn" onclick="navigateTo('homePage')">← BACK</div>
+        <div class="back-btn" onclick="window.navigateTo('homePage')">← BACK</div>
         <h1 style="color: #ffaa00;">WANTED NOTES</h1>
-        <p style="text-align:center; font-size:0.8rem; color:#888;">Request missing chapters here.</p>
-        
         <div class="glass-box" style="border-color: #ffaa00;">
-            <input type="text" id="reqInput" placeholder="E.g., Need Science Ch-4 urgently!">
-            <button class="submit-btn" style="background: #ffaa00; color: black;" onclick="postWantedRequest()">SUBMIT REQUEST</button>
+            <input type="text" id="reqInput" placeholder="Request a chapter...">
+            <button class="submit-btn" style="background: #ffaa00; color: black;" onclick="window.postWantedRequest()">SUBMIT REQUEST</button>
         </div>
-        
         <div id="wantedList" style="width: 100%; max-width: 400px;"></div>
     </div>
 
-    <div id="vaultAccessPage" class="page">
-        <div class="back-btn" onclick="navigateTo('homePage')">← EXIT</div>
-        <div class="glass-box">
-            <h1>VAULT LOGIN</h1>
-            <input type="text" id="vCode" placeholder="3-Digit Code" maxlength="3">
-            <input type="text" id="vName" placeholder="Username">
-            <input type="password" id="vPass" placeholder="Password">
-            <button class="submit-btn" onclick="loginVault()">OPEN VAULT</button>
-            <button style="background:none; border:1px solid #444;" onclick="navigateTo('registerPage')">CREATE NEW ID</button>
-        </div>
-    </div>
-
-    <div id="registerPage" class="page">
-        <div class="back-btn" onclick="navigateTo('vaultAccessPage')">← BACK</div>
-        <div class="glass-box">
-            <h1>NEW VAULT</h1>
-            <input type="text" id="rCode" placeholder="Pick 3-Digit Code" maxlength="3">
-            <input type="text" id="rName" placeholder="Unique Username">
-            <input type="password" id="rPass" placeholder="Set Password">
-            <button class="submit-btn" onclick="registerUser()">REGISTER</button>
-        </div>
-    </div>
-
     <div id="dashboardPage" class="page">
-        <div class="back-btn" onclick="navigateTo('homePage')">← EXIT</div>
+        <div class="back-btn" onclick="window.navigateTo('homePage')">← HOME</div>
         <h1 id="userTitle">Vault</h1>
         
         <div class="glass-box">
             <h2 style="font-size: 1rem; color: #fff; margin-top:0;">UPLOAD NOTES</h2>
             <select id="pSub">
-                <option>SST</option><option>G.K</option><option>Computer</option>
-                <option>H.LANG</option><option>Science</option><option>Eng Lit</option>
-                <option>Eng gra</option><option>Eng Lang</option><option>H.Lit</option><option>MATHS</option>
+                <option>History</option>
+                <option>Geography</option>
+                <option>Civics</option>
+                <option>Economics</option>
+                <option>Computer</option>
+                <option>Science</option>
+                <option>H.Lang</option>
+                <option>H.Lit</option>
+                <option>Eng Lang</option>
+                <option>Eng Lit</option>
+                <option>Maths</option>
+                <option>G.K</option>
             </select>
             <input type="text" id="pChap" placeholder="Chapter Name (e.g. Ch-1)">
             <p style="font-size:0.8rem; color:#aaa; margin:5px 0 0 0;">Select images OR a PDF file.</p>
@@ -122,31 +126,32 @@
                 Post as Anonymous (Ghost Mode 👻)
             </label>
 
-            <button class="submit-btn" id="upBtn" onclick="uploadNote()">BROADCAST TO HUB</button>
+            <button class="submit-btn" id="upBtn" onclick="window.uploadNote()">BROADCAST TO HUB</button>
         </div>
 
-        <h2 style="font-size: 1rem; color: var(--neon-purple); text-align: center;">MY ALERTS</h2>
+        <h2 style="font-size: 1rem; color: var(--neon-purple);">MY ALERTS</h2>
         <div id="myMessagesArea" style="width:100%; max-width:400px; margin-bottom: 20px;"></div>
 
-        <h2 style="font-size: 1rem; color: var(--neon-blue); text-align: center;">MY HISTORY</h2>
+        <h2 style="font-size: 1rem; color: var(--neon-blue);">MY HISTORY</h2>
         <div id="myUploadsArea" style="width:100%; max-width:400px;"></div>
     </div>
 
-    <div id="subjectPage" class="page"><div class="back-btn" onclick="navigateTo('homePage')">← BACK</div><h1>SUBJECTS</h1><div class="grid" id="subGrid"></div></div>
-    <div id="chapterPage" class="page"><div class="back-btn" onclick="navigateTo('subjectPage')">← BACK</div><h1 id="chapterTitle">CHAPTERS</h1><div class="grid" id="chapGrid"></div></div>
-    <div id="posterListPage" class="page"><div class="back-btn" onclick="navigateTo('chapterPage')">← BACK</div><h1 id="posterTitle">POSTERS</h1><div class="grid" id="posterGrid"></div></div>
-    <div id="galleryPage" class="page"><div class="back-btn" onclick="navigateTo('posterListPage')">← BACK</div><h1 id="galleryTitle">NOTES</h1><div id="notesArea" style="width:100%; max-width:500px;"></div></div>
+    <div id="subjectPage" class="page"><div class="back-btn" onclick="window.navigateTo('homePage')">← BACK</div><h1>SUBJECTS</h1><div class="grid" id="subGrid"></div></div>
+    <div id="chapterPage" class="page"><div class="back-btn" onclick="window.navigateTo('subjectPage')">← BACK</div><h1 id="chapterTitle">CHAPTERS</h1><div class="grid" id="chapGrid"></div></div>
+    <div id="posterListPage" class="page"><div class="back-btn" onclick="window.navigateTo('chapterPage')">← BACK</div><h1 id="posterTitle">POSTERS</h1><div class="grid" id="posterGrid"></div></div>
+    <div id="galleryPage" class="page"><div class="back-btn" onclick="window.navigateTo('posterListPage')">← BACK</div><h1 id="galleryTitle">NOTES</h1><div id="notesArea" style="width:100%; max-width:500px;"></div></div>
 
     <div id="adminPage" class="page">
-        <div class="back-btn" onclick="navigateTo('homePage')">← CLOSE</div>
-        <h1 style="color: #ff4d4d; text-shadow: 0 0 10px red;">ADMIN OVERRIDE</h1>
+        <div class="back-btn" onclick="window.navigateTo('homePage')">← CLOSE</div>
+        <h1 style="color: #ff4d4d; text-shadow: 0 0 10px red;">GOD MODE</h1>
         
         <div class="glass-box" style="border-color: #ff4d4d;">
             <h2 style="font-size: 1rem; color: #ff4d4d; margin-top:0;">UPDATE NOTICE BOARD</h2>
             <input type="text" id="adminNoticeInput" placeholder="Type new announcement...">
-            <button class="submit-btn" style="background: #ff4d4d;" onclick="updateNotice()">BROADCAST</button>
+            <button class="submit-btn" style="background: #ff4d4d;" onclick="window.updateNotice()">BROADCAST</button>
         </div>
 
+        <h2 style="color:#ff4d4d; text-align:center;">STUDENT DATABASE</h2>
         <div id="adminList" style="width: 100%; max-width: 600px;"></div>
     </div>
 
@@ -166,24 +171,25 @@
       measurementId: "G-WGDVBDT58H"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
+    let app, db;
+    try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+    } catch(e) {
+        alert("Connection Error");
+    }
 
-    // Setup PDF JS Worker
+    const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
     let currentVault = null;
-    let liveSync = null;
-    let messageSync = null;
-    let wantedSync = null;
-    let selSub = ""; 
-    let selChap = "";
+    let liveSync, messageSync, wantedSync;
+    let selSub, selChap;
     let activeCommentListeners = [];
     window.loadedAlbums = {}; 
 
-    const navigateTo = (id) => {
+    window.navigateTo = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         if(id !== 'galleryPage') {
@@ -191,144 +197,29 @@
             activeCommentListeners = [];
         }
     };
-    window.navigateTo = navigateTo;
 
-    window.startVaultFlow = () => {
-        const authCode = prompt("Authorization Code:");
-        if(authCode === "@RetroHope2026") {
-            loadAdminDashboard(); navigateTo('adminPage');
-        } else if(authCode === "@777") {
-            navigateTo('vaultAccessPage');
-        } else alert("Denied");
-    };
-
-    // --- NOTICE & WANTED BOARD ---
-    onSnapshot(doc(db, "system", "notice"), (docSnap) => {
-        if(docSnap.exists()) document.getElementById('noticeText').innerText = docSnap.data().text;
-    });
-
-    window.updateNotice = async () => {
-        const txt = document.getElementById('adminNoticeInput').value;
-        if(!txt) return alert("Write a notice first!");
-        await setDoc(doc(db, "system", "notice"), { text: txt });
-        document.getElementById('adminNoticeInput').value = "";
-        alert("Notice Broadcasted!");
-    };
-
-    window.openWantedBoard = () => {
-        navigateTo('wantedPage');
-        if(wantedSync) wantedSync();
-        wantedSync = onSnapshot(collection(db, "wanted"), (snap) => {
-            const list = document.getElementById('wantedList');
-            list.innerHTML = "";
-            if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#888;'>No active requests.</p>"; return; }
-            snap.forEach(d => {
-                const req = d.data();
-                let adminBtn = currentVault && currentVault.name === "Retro Hope" ? `<button onclick="resolveRequest('${d.id}')" style="background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:5px; margin-top:10px; cursor:pointer;">RESOLVE</button>` : "";
-                list.innerHTML += `<div class="glass-box" style="padding:15px; border-color:#ffaa00; margin-bottom:10px;"><span style="color:#ffaa00; font-weight:bold;">${req.author} asks:</span><br>${req.text}<br>${adminBtn}</div>`;
-            });
-        });
-    };
-    window.postWantedRequest = async () => {
-        const txt = document.getElementById('reqInput').value.trim();
-        if(!txt) return;
-        const author = currentVault ? currentVault.name : prompt("Enter your name:");
-        if(!author) return;
-        await addDoc(collection(db, "wanted"), { author: author, text: txt });
-        document.getElementById('reqInput').value = "";
-    };
-    window.resolveRequest = async (id) => { if(confirm("Remove request?")) await deleteDoc(doc(db, "wanted", id)); };
-
-    // --- INBOX SYSTEM ---
-    function enableMessageSync(vaultCode) {
-        if(messageSync) messageSync();
-        const q = query(collection(db, "messages"), where("to_code", "==", vaultCode));
-        messageSync = onSnapshot(q, (snap) => {
-            const area = document.getElementById('myMessagesArea');
-            area.innerHTML = "";
-            if(snap.empty) { area.innerHTML = "<p style='color:#666; text-align:center;'>Inbox is empty.</p>"; return; }
-            snap.forEach(d => {
-                const msg = d.data();
-                area.innerHTML += `<div class="glass-box" style="padding:15px; margin-bottom:10px; border-color:var(--neon-purple);"><strong style="color:var(--neon-purple);">${msg.from}:</strong><br><span style="font-size:0.9rem;">${msg.text}</span><br><button onclick="deleteMessage('${d.id}')" style="background:#444; color:white; padding:5px 15px; border-radius:5px; margin-top:10px; border:none; cursor:pointer;">Clear Alert</button></div>`;
-            });
-        });
-    }
-    window.deleteMessage = async (id) => await deleteDoc(doc(db, "messages", id));
-    window.sendMessageToPoster = async (toCode, posterName) => {
-        const senderName = currentVault ? currentVault.name : prompt("Your name:");
-        if(!senderName) return;
-        const msg = prompt(`What do you want to say to ${posterName}?`);
-        if(!msg) return;
-        await addDoc(collection(db, "messages"), { to_code: toCode, from: senderName, text: msg });
-        alert("Sent!");
-    };
-    window.reportBlurry = async (toCode, sub, chap) => {
-        if(confirm("Report blurry?")) {
-            await addDoc(collection(db, "messages"), { to_code: toCode, from: "SYSTEM FLAG 🚩", text: `Your ${sub} (${chap}) note was reported blurry. Please replace it!` });
-            alert("Reported.");
-        }
-    };
-
-    // --- ADMIN POWERS ---
-    window.loadAdminDashboard = async () => {
-        const list = document.getElementById('adminList');
-        const snap = await getDocs(collection(db, "vaults"));
-        list.innerHTML = "";
-        snap.forEach(docSnap => {
-            const user = docSnap.data();
-            list.innerHTML += `<div class="glass-box" style="border-color: #ff4d4d; padding: 15px;">
-                <h3 style="margin-top:0; color:#ff4d4d;">${user.name}</h3><p>Code: ${user.code} | Pass: ${user.pass}</p>
-                <div style="display:flex; gap:10px;"><button class="submit-btn" style="background:#444; flex:1;" onclick="adminViewPosts('${user.code}')">POSTS</button><button class="submit-btn" style="background:#ff4d4d; flex:1;" onclick="forcePurge('${user.code}', '${user.name}')">PURGE</button></div>
-                <div id="adminPosts_${user.code}" style="margin-top:10px; font-size:0.9rem; color:#aaa;"></div></div>`;
-        });
-    };
-    window.adminViewPosts = async (code) => {
-        const div = document.getElementById(`adminPosts_${code}`);
-        const q = query(collection(db, "all_notes"), where("vault_code", "==", code));
-        const snap = await getDocs(q);
-        div.innerHTML = `Posts: ${snap.size}<br>`;
-        snap.forEach(d => { div.innerHTML += `- ${d.data().subject} (${d.data().chapter})<br>`; });
-    };
-    window.forcePurge = async (code, userName) => {
-        if(prompt("TYPE PURGE") !== "PURGE") return;
-        await deleteDoc(doc(db, "vaults", code));
-        const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
-        snap.forEach(async (d) => await deleteDoc(doc(db, "all_notes", d.id)));
-        alert("Purged."); loadAdminDashboard(); 
-    };
-
-    // --- GLOBAL SYNC & LOGIN ---
-    function enableGlobalSync(vaultCode) {
-        if (liveSync) liveSync(); 
-        const q = query(collection(db, "all_notes"), where("vault_code", "==", vaultCode));
-        liveSync = onSnapshot(q, (snap) => {
-            const area = document.getElementById('myUploadsArea');
-            area.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
-                const thumb = data.urls ? data.urls[0] : data.url;
-                area.innerHTML += `<div class="note-card" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <img src="${thumb}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; margin:0;">
-                    <div style="flex:1; font-size:0.8rem;"><b>${data.subject}</b> - ${data.chapter}<br><i>${data.urls ? data.urls.length+' Pages' : ''}</i></div>
-                    <button class="del-tag" onclick="deleteGlobalNote('${d.id}')">ERASE</button>
-                </div>`;
-            });
-        });
-    }
-    window.deleteGlobalNote = async (id) => { if(confirm("Erase forever?")) await deleteDoc(doc(db, "all_notes", id)); };
-
-    window.loginVault = async () => {
-        const code = document.getElementById('vCode').value;
-        const pass = document.getElementById('vPass').value;
-        const snap = await getDoc(doc(db, "vaults", code));
-        if(snap.exists() && snap.data().pass === pass) {
-            currentVault = snap.data();
-            if(currentVault.code === "777") currentVault.name = "Retro Hope"; 
-            document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
-            enableGlobalSync(currentVault.code); 
-            enableMessageSync(currentVault.code); 
-            navigateTo('dashboardPage');
-        } else alert("Invalid ID");
+    // --- GATEWAY LOGIN ---
+    window.gateLogin = async () => {
+        const code = document.getElementById('gCode').value;
+        const pass = document.getElementById('gPass').value;
+        if(!code || !pass) return alert("Enter Code & Pass");
+        
+        try {
+            const snap = await getDoc(doc(db, "vaults", code));
+            if(snap.exists() && snap.data().pass === pass) {
+                currentVault = snap.data();
+                if(currentVault.code === "777") currentVault.name = "Retro Hope";
+                
+                document.getElementById('userDisplay').innerText = currentVault.name;
+                document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
+                
+                enableMessageSync(currentVault.code);
+                enableGlobalSync(currentVault.code);
+                window.navigateTo('homePage');
+            } else {
+                alert("Incorrect Code or Password");
+            }
+        } catch(e) { alert("Network Error"); }
     };
 
     window.registerUser = async () => {
@@ -336,190 +227,231 @@
         const code = document.getElementById('rCode').value.trim();
         const pass = document.getElementById('rPass').value.trim();
         if(code.length === 3 && name && pass) {
+            const check = await getDoc(doc(db, "vaults", code));
+            if(check.exists()) return alert("Code Taken");
+            
             await setDoc(doc(db, "vaults", code), { name, pass, code });
-            alert("ID Registered!"); navigateTo('vaultAccessPage');
+            alert("Created! Please Login.");
+            window.navigateTo('gatePage');
+        } else { alert("Invalid"); }
+    };
+
+    // --- THE SECOND LOCK (POST & ADMIN) ---
+    window.startVaultFlow = () => {
+        const auth = prompt("ENTER AUTHORIZATION CODE:");
+        if(auth === "@RetroHope2026") {
+            window.loadAdminDashboard();
+            window.navigateTo('adminPage');
+        } else if (auth === "@777") {
+            window.navigateTo('dashboardPage');
+        } else {
+            alert("ACCESS DENIED: Students cannot post.");
         }
     };
 
-    // --- MASSIVE PDF & MULTI-IMAGE UPLOADER ---
+    // --- NOTICE BOARD ---
+    onSnapshot(doc(db, "system", "notice"), (docSnap) => {
+        if(docSnap.exists()) document.getElementById('noticeText').innerText = docSnap.data().text;
+    });
+    window.updateNotice = async () => {
+        const txt = document.getElementById('adminNoticeInput').value;
+        if(txt) await setDoc(doc(db, "system", "notice"), { text: txt });
+        alert("Broadcasted!");
+    };
+
+    // --- WANTED BOARD ---
+    window.openWantedBoard = () => {
+        window.navigateTo('wantedPage');
+        if(wantedSync) wantedSync();
+        wantedSync = onSnapshot(collection(db, "wanted"), (snap) => {
+            const list = document.getElementById('wantedList'); list.innerHTML = "";
+            snap.forEach(d => {
+                const req = d.data();
+                let btn = `<button onclick="window.resolveRequest('${d.id}')" style="width:100%; background:var(--neon-blue); color:black; font-weight:bold; border:none; padding:8px; margin-top:5px; cursor:pointer;">✅ WISH FULFILLED</button>`;
+                list.innerHTML += `<div class="glass-box" style="padding:15px; border-color:#ffaa00;"><b>${req.author} asks:</b><br>${req.text}<br>${btn}</div>`;
+            });
+        });
+    };
+    window.postWantedRequest = async () => {
+        const t = document.getElementById('reqInput').value;
+        if(t) { await addDoc(collection(db, "wanted"), { author: currentVault.name, text: t }); document.getElementById('reqInput').value = ""; }
+    };
+    window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
+
+    // --- ADMIN TOOLS ---
+    window.loadAdminDashboard = async () => {
+        const list = document.getElementById('adminList');
+        list.innerHTML = "Loading...";
+        const snap = await getDocs(collection(db, "vaults"));
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const u = d.data();
+            list.innerHTML += `<div class="glass-box" style="border-color:#ff4d4d; padding:10px;">
+                <h3>${u.name} (${u.code})</h3><p>Pass: <span style="color:#ffaa00">${u.pass}</span></p>
+                <div style="display:flex; gap:5px;">
+                    <button class="submit-btn" style="background:#444; flex:1;" onclick="window.adminViewPosts('${u.code}')">POSTS</button>
+                    <button class="submit-btn" style="background:#222; border:1px solid #555; flex:1;" onclick="window.adminSpyInbox('${u.code}')">SPY</button>
+                    <button class="submit-btn" style="background:#ff4d4d; flex:1;" onclick="window.forcePurge('${u.code}', '${u.name}')">NUKE</button>
+                </div>
+                <div id="adminData_${u.code}" style="margin-top:5px; font-size:0.8rem; color:#aaa;"></div>
+            </div>`;
+        });
+    };
+
+    window.adminViewPosts = async (code) => {
+        const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Scanning...";
+        const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
+        div.innerHTML = `Posts: ${snap.size}`;
+    };
+
+    window.adminSpyInbox = async (code) => {
+        const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Spying...";
+        const snap = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
+        div.innerHTML = snap.empty ? "Inbox Empty" : "";
+        snap.forEach(m => div.innerHTML += `<div><b>${m.data().from}:</b> ${m.data().text}</div>`);
+    };
+
+    window.forcePurge = async (code, name) => {
+        if(prompt(`Type PURGE to wipe ${name}:`) !== "PURGE") return;
+        await deleteDoc(doc(db, "vaults", code));
+        const notes = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
+        notes.forEach(async n => {
+            const comms = await getDocs(query(collection(db, "comments"), where("note_id", "==", n.id)));
+            comms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
+            await deleteDoc(doc(db, "all_notes", n.id));
+        });
+        const msgs = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
+        msgs.forEach(async m => await deleteDoc(doc(db, "messages", m.id)));
+        const reqs = await getDocs(query(collection(db, "wanted"), where("author", "==", name)));
+        reqs.forEach(async r => await deleteDoc(doc(db, "wanted", r.id)));
+        const myComms = await getDocs(query(collection(db, "comments"), where("author", "==", name)));
+        myComms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
+        alert("User Wiped."); window.loadAdminDashboard();
+    };
+
+    // --- UPLOAD ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
-        const chap = document.getElementById('pChap').value.trim();
+        const chap = document.getElementById('pChap').value;
         const files = document.getElementById('imgInp').files;
-        if(!chap || files.length === 0) return alert("Select File & Chapter");
+        if(!chap || !files.length) return alert("Select File & Chapter");
         
         const isGhost = document.getElementById('ghostCheck').checked;
-        const displayName = isGhost ? "Ghost Poster 👻" : currentVault.name;
-        const upBtn = document.getElementById('upBtn');
-        upBtn.disabled = true;
+        const btn = document.getElementById('upBtn');
+        btn.innerText = "Syncing..."; btn.disabled = true;
 
-        let finalB64Images = [];
-
-        for(let i=0; i<files.length; i++) {
-            let file = files[i];
-            if(file.type === "application/pdf") {
-                upBtn.innerText = "Processing PDF...";
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                for(let pageNum=1; pageNum<=pdf.numPages; pageNum++) {
-                    const page = await pdf.getPage(pageNum);
-                    const viewport = page.getViewport({scale: 1.5});
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    await page.render({canvasContext: ctx, viewport: viewport}).promise;
-                    finalB64Images.push(canvas.toDataURL("image/jpeg").split(',')[1]);
+        let urls = [];
+        for(let f of files) {
+            const fd = new FormData();
+            if(f.type === "application/pdf") {
+                const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
+                for(let i=1; i<=pdf.numPages; i++) {
+                    const p = await pdf.getPage(i);
+                    const cvs = document.createElement('canvas');
+                    const v = p.getViewport({scale:1.5});
+                    cvs.height = v.height; cvs.width = v.width;
+                    await p.render({canvasContext: cvs.getContext('2d'), viewport: v}).promise;
+                    fd.append("image", cvs.toDataURL("image/jpeg").split(',')[1]);
                 }
-            } else {
-                upBtn.innerText = "Processing Image...";
-                const b64 = await new Promise(res => {
-                    const reader = new FileReader();
-                    reader.onload = () => res(reader.result.split(',')[1]);
-                    reader.readAsDataURL(file);
-                });
-                finalB64Images.push(b64);
-            }
+            } else { fd.append("image", f); }
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+            const j = await res.json(); urls.push(j.data.url);
         }
 
-        let uploadedUrls = [];
-        for(let i=0; i<finalB64Images.length; i++) {
-            upBtn.innerText = `Sending to Hub (${i+1}/${finalB64Images.length})...`;
-            const fd = new FormData(); fd.append("image", finalB64Images[i]);
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method: "POST", body: fd});
-            const json = await res.json();
-            uploadedUrls.push(json.data.url);
-        }
-        
-        await addDoc(collection(db, "all_notes"), { 
-            author: currentVault.name, 
-            display_author: displayName, 
-            vault_code: currentVault.code, 
-            subject: sub, chapter: chap, 
-            urls: uploadedUrls,
-            created_at: Date.now()
+        await addDoc(collection(db, "all_notes"), {
+            author: currentVault.name, vault_code: currentVault.code,
+            display_author: isGhost ? "Ghost 👻" : currentVault.name,
+            subject: sub, chapter: chap, urls: urls
         });
-        
-        upBtn.innerText = "BROADCAST TO HUB";
-        upBtn.disabled = false;
-        document.getElementById('imgInp').value = ""; 
-        document.getElementById('ghostCheck').checked = false;
-        alert("Upload Complete! Album created.");
+        alert("Posted!"); btn.innerText = "BROADCAST TO HUB"; btn.disabled = false;
     };
 
-    // --- HUB VIEWER ---
-    const subs = ["SST", "G.K", "Computer", "H.LANG", "Science", "Eng Lit", "Eng gra", "Eng Lang", "H.Lit", "MATHS"];
+    // --- VIEWER ---
+    const subs = ["History", "Geography", "Civics", "Economics", "Computer", "Science", "H.Lang", "H.Lit", "Eng Lang", "Eng Lit", "Maths", "G.K"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
         b.onclick = () => loadChapters(s); document.getElementById('subGrid').appendChild(b);
     });
 
-    async function loadChapters(sub) {
-        selSub = sub; navigateTo('chapterPage');
-        const grid = document.getElementById('chapGrid'); grid.innerHTML = "Syncing...";
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", sub)));
+    async function loadChapters(s) {
+        selSub = s; window.navigateTo('chapterPage');
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", s)));
         const chaps = new Set(); snap.forEach(d => chaps.add(d.data().chapter));
-        grid.innerHTML = "";
+        const g = document.getElementById('chapGrid'); g.innerHTML = "";
         chaps.forEach(c => {
             const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
-            b.onclick = () => loadPosters(c); grid.appendChild(b);
+            b.onclick = () => loadPosters(c); g.appendChild(b);
         });
     }
 
-    async function loadPosters(chap) {
-        selChap = chap; navigateTo('posterListPage');
-        const grid = document.getElementById('posterGrid'); grid.innerHTML = "Syncing...";
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", chap)));
+    async function loadPosters(c) {
+        selChap = c; window.navigateTo('posterListPage');
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
         const users = new Map();
-        snap.forEach(d => {
-            const data = d.data();
-            const dName = data.display_author || data.author;
-            users.set(data.vault_code + "_" + dName, { name: dName, code: data.vault_code });
-        });
-        grid.innerHTML = "";
-        users.forEach((userData, key) => {
-            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "Notes by " + userData.name;
-            b.onclick = () => loadGallery(userData.name, userData.code); grid.appendChild(b);
+        snap.forEach(d => users.set(d.data().vault_code, d.data().display_author));
+        const g = document.getElementById('posterGrid'); g.innerHTML = "";
+        users.forEach((n, code) => {
+            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "By " + n;
+            b.onclick = () => loadGallery(n, code); g.appendChild(b);
         });
     }
-
-    // ALBUM SLIDER LOGIC
-    window.changePage = (id, dir) => {
-        const img = document.getElementById(`img_${id}`);
-        const txt = document.getElementById(`pageTxt_${id}`);
-        let urls = window.loadedAlbums[id];
-        let curIdx = parseInt(img.getAttribute('data-index'));
-        let nextIdx = curIdx + dir;
-        if(nextIdx >= 0 && nextIdx < urls.length) {
-            img.src = urls[nextIdx];
-            img.setAttribute('data-index', nextIdx);
-            txt.innerText = `Pg ${nextIdx + 1} / ${urls.length}`;
-        }
-    };
 
     async function loadGallery(name, code) {
-        navigateTo('galleryPage');
-        const area = document.getElementById('notesArea'); area.innerHTML = "Opening...";
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", selChap), where("vault_code", "==", code)));
+        window.navigateTo('galleryPage');
+        const a = document.getElementById('notesArea'); a.innerHTML = "Loading...";
+        const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code), where("chapter", "==", selChap)));
         
-        let htmlBuild = `<h2 style="text-align:center">${selSub}: ${selChap}</h2><p style="text-align:center; color:#888;">Student: ${name}</p>`;
-        if(name !== "Ghost Poster 👻") htmlBuild += `<button class="submit-btn" style="width:100%; max-width:400px; margin-bottom:20px; font-size:0.9rem;" onclick="sendMessageToPoster('${code}', '${name}')">✉️ MESSAGE POSTER</button>`;
+        a.innerHTML = `<h2>${selSub}: ${selChap}</h2><p style="text-align:center">By ${name}</p>`;
+        if(name !== "Ghost 👻") a.innerHTML += `<button onclick="window.sendMessageToPoster('${code}', '${name}')" class="submit-btn" style="margin-bottom:10px;">✉️ MESSAGE</button>`;
 
-        if(snap.empty) { area.innerHTML = htmlBuild + "<p>Failed to load.</p>"; return; }
-
-        const noteIds = [];
         snap.forEach(d => {
             const data = d.data();
-            if((data.display_author || data.author) !== name) return; 
-            
-            noteIds.push(d.id);
-            window.loadedAlbums[d.id] = data.urls || [data.url]; 
-            let firstImg = window.loadedAlbums[d.id][0];
-            let isAlbum = window.loadedAlbums[d.id].length > 1;
-
-            let albumControls = isAlbum ? `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <button class="album-ctrl" onclick="changePage('${d.id}', -1)">◀</button>
-                    <span id="pageTxt_${d.id}" style="font-size:0.8rem; font-weight:bold;">Pg 1 / ${window.loadedAlbums[d.id].length}</span>
-                    <button class="album-ctrl" onclick="changePage('${d.id}', 1)">▶</button>
-                </div>` : "";
-
-            htmlBuild += `
-            <div class="note-card">
-                ${albumControls}
-                <img id="img_${d.id}" src="${firstImg}" data-index="0">
-                <button style="width:100%; padding:10px; background:rgba(255, 77, 77, 0.2); color:#ff4d4d; border:1px solid #ff4d4d; border-radius:5px; font-weight:bold; cursor:pointer; margin-bottom:10px;" onclick="reportBlurry('${code}', '${selSub}', '${selChap}')">🚩 REPORT BLURRY</button>
-                
-                <div class="comment-area" id="comments_${d.id}">Loading comments...</div>
-                <div class="comment-input-grp">
-                    <input type="text" id="commInput_${d.id}" placeholder="Ask a question..." style="flex:1;">
-                    <button onclick="postComment('${d.id}')">POST</button>
-                </div>
+            window.loadedAlbums[d.id] = data.urls;
+            a.innerHTML += `<div class="note-card">
+                <img id="img_${d.id}" src="${data.urls[0]}" data-idx="0">
+                ${data.urls.length > 1 ? `<div style="display:flex; justify-content:space-between;"><button style="background:#333; color:#fff; border:none; padding:5px;" onclick="window.flip('${d.id}', -1)">Prev</button><button style="background:#333; color:#fff; border:none; padding:5px;" onclick="window.flip('${d.id}', 1)">Next</button></div>` : ''}
+                <button style="width:100%; margin-top:10px; color:#ff4d4d; border:1px solid red; background:transparent;" onclick="window.reportBlurry('${code}', '${selSub}', '${selChap}')">Report Blurry</button>
+                <div class="comment-area" id="c_${d.id}"></div>
+                <div class="comment-input-grp"><input id="in_${d.id}" placeholder="Comment..."><button onclick="window.postComm('${d.id}')">Post</button></div>
             </div>`;
+            listenComments(d.id);
         });
-        area.innerHTML = htmlBuild;
-        noteIds.forEach(id => startCommentListener(id));
     }
 
-    // --- COMMENTS ---
-    function startCommentListener(noteId) {
-        const unsub = onSnapshot(query(collection(db, "comments"), where("note_id", "==", noteId)), (snap) => {
-            const div = document.getElementById(`comments_${noteId}`);
-            if(!div) return;
-            div.innerHTML = "";
-            if(snap.empty) { div.innerHTML = "<i style='color:#666; font-size:0.8rem;'>No comments. Be the first!</i>"; return; }
-            snap.forEach(d => { const c = d.data(); div.innerHTML += `<div class="comment-msg"><b style="color:var(--neon-blue);">${c.author}:</b> ${c.text}</div>`; });
-            div.scrollTop = div.scrollHeight;
+    window.flip = (id, dir) => {
+        const img = document.getElementById(`img_${id}`);
+        const urls = window.loadedAlbums[id];
+        let idx = parseInt(img.dataset.idx) + dir;
+        if(idx >= 0 && idx < urls.length) { img.src = urls[idx]; img.dataset.idx = idx; }
+    };
+
+    function enableGlobalSync(c) {
+        onSnapshot(query(collection(db, "all_notes"), where("vault_code", "==", c)), snap => {
+            const d = document.getElementById('myUploadsArea'); d.innerHTML = "";
+            snap.forEach(x => d.innerHTML += `<div class="glass-box" style="padding:10px;">${x.data().subject} - ${x.data().chapter} <button style="float:right; background:red; border:none; color:white; cursor:pointer;" onclick="window.delNote('${x.id}')">X</button></div>`);
         });
-        activeCommentListeners.push(unsub);
     }
-    window.postComment = async (noteId) => {
-        const text = document.getElementById(`commInput_${noteId}`).value.trim();
-        if(!text) return;
-        const author = currentVault ? currentVault.name : prompt("Name to comment:");
-        if(!author) return;
-        await addDoc(collection(db, "comments"), { note_id: noteId, author: author, text: text });
-        document.getElementById(`commInput_${noteId}`).value = "";
+    window.delNote = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "all_notes", id)); };
+
+    function enableMessageSync(c) {
+        onSnapshot(query(collection(db, "messages"), where("to_code", "==", c)), snap => {
+            const d = document.getElementById('myMessagesArea'); d.innerHTML = "";
+            snap.forEach(x => d.innerHTML += `<div class="glass-box" style="padding:10px; border-color:var(--neon-purple);"><b style="color:var(--neon-purple)">${x.data().from}:</b> ${x.data().text} <button style="float:right; background:#333; border:none; color:white;" onclick="window.delMsg('${x.id}')">X</button></div>`);
+        });
+    }
+    window.delMsg = async (id) => await deleteDoc(doc(db, "messages", id));
+    window.sendMessageToPoster = async (c, n) => { const m = prompt("Message:"); if(m) await addDoc(collection(db, "messages"), { to_code: c, from: currentVault.name, text: m }); };
+    window.reportBlurry = async (c, s, ch) => { if(confirm("Report?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Re-upload ${s} ${ch}` }); };
+    
+    function listenComments(id) {
+        onSnapshot(query(collection(db, "comments"), where("note_id", "==", id)), snap => {
+            const d = document.getElementById(`c_${id}`); d.innerHTML = "";
+            snap.forEach(c => d.innerHTML += `<div class="comment-msg"><b style="color:var(--neon-blue)">${c.data().author}:</b> ${c.data().text}</div>`);
+        });
+    }
+    window.postComm = async (id) => {
+        const t = document.getElementById(`in_${id}`).value;
+        if(t) { await addDoc(collection(db, "comments"), { note_id: id, author: currentVault.name, text: t }); document.getElementById(`in_${id}`).value = ""; }
     };
 </script>
 </body>
