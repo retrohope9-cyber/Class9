@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mount Assisi Notes Hub</title>
+    <title>Notes Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -25,19 +25,14 @@
         .note-card { background: var(--glass); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; box-sizing: border-box; }
         .note-card img { width: 100%; border-radius: 10px; border: 1px solid var(--neon-purple); margin-bottom: 10px; }
         .back-btn { align-self: flex-start; margin-bottom: 15px; color: var(--neon-blue); font-weight: bold; cursor: pointer; }
-        .del-tag { background: #ff4d4d; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.7rem; cursor: pointer; border: none; margin-top: 5px; }
         
-        .notice-board { width: 100%; max-width: 400px; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 10px; border-radius: 10px; margin-bottom: 20px; box-sizing: border-box;}
-        @keyframes scrollText { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
-        .scroll-box { overflow: hidden; white-space: nowrap; width: 100%; margin-top: 5px; }
-        .scroll-text { display: inline-block; padding-left: 100%; animation: scrollText 15s linear infinite; color: white; font-weight: bold; }
+        .notice-board { width: 100%; max-width: 400px; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-sizing: border-box;}
         
         .comment-area { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 0.8rem; }
         .comment-msg { font-size: 0.8rem; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
         .comment-input-grp { display: flex; gap: 5px; margin-top: 10px; }
         .comment-input-grp input { margin: 0; padding: 10px; font-size: 0.8rem; }
         .comment-input-grp button { margin: 0; padding: 10px; width: auto; background: var(--neon-blue); color: black; font-weight: bold; }
-        .album-ctrl { background: #444; border:none; color:white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -74,8 +69,9 @@
         <p style="color:#888; font-size:0.8rem;">Welcome, <span id="userDisplay" style="color:var(--neon-blue);">Guest</span></p>
         
         <div class="notice-board">
-            <strong style="color: #ff4d4d; font-size: 0.8rem;">ADMIN ANNOUNCEMENT:</strong>
-            <div class="scroll-box"><div id="noticeText" class="scroll-text">Syncing...</div></div>
+            <strong style="color: #ff4d4d; font-size: 0.9rem;">ADMIN BROADCAST:</strong>
+            <div id="noticeText" style="margin-top:8px; font-size:0.85rem; color:#ddd; font-weight:normal; line-height:1.4;">Syncing...</div>
+            <img id="noticeImg" src="" style="width:100%; border-radius:8px; margin-top:10px; display:none; border:1px solid #444;">
         </div>
 
         <div style="display:flex; flex-direction:column; gap:12px; width: 100%; max-width: 400px;">
@@ -85,6 +81,7 @@
             </div>
             <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.openWantedBoard()">🎯 WANTED BOARD</div>
         </div>
+        <p style="color:#333; font-size:0.7rem; margin-top:30px; letter-spacing:1px;">POWERED BY RETROSPECTIVE</p>
     </div>
 
     <div id="wantedPage" class="page">
@@ -108,32 +105,35 @@
                 <option>Geography</option>
                 <option>Civics</option>
                 <option>Economics</option>
-                <option>Computer</option>
-                <option>Science</option>
-                <option>H.Lang</option>
-                <option>H.Lit</option>
+                <option>INFORMATION TECHNOLOGY</option>
+                <option>PHYSICS</option>
+                <option>CHEMISTRY</option>
+                <option>BIOLOGY</option>
+                <option>हिंदी व्याकरण</option>
+                <option>हिंदी</option>
                 <option>Eng Lang</option>
                 <option>Eng Lit</option>
                 <option>Maths</option>
-                <option>G.K</option>
             </select>
             <input type="text" id="pChap" placeholder="Chapter Name (e.g. Ch-1)">
             <p style="font-size:0.8rem; color:#aaa; margin:5px 0 0 0;">Select images OR a PDF file.</p>
             <input type="file" id="imgInp" accept="image/*,application/pdf" multiple>
-            
-            <label style="display:flex; align-items:center; gap:10px; margin: 15px 0; font-size: 0.9rem; color: #aaa; cursor:pointer;">
-                <input type="checkbox" id="ghostCheck" style="width:20px; height:20px; margin:0;">
-                Post as Anonymous (Ghost Mode 👻)
-            </label>
 
-            <button class="submit-btn" id="upBtn" onclick="window.uploadNote()">BROADCAST TO HUB</button>
+            <button class="submit-btn" id="upBtn" onclick="window.uploadNote()">UPLOAD TO FOLDER</button>
         </div>
 
         <h2 style="font-size: 1rem; color: var(--neon-purple);">MY ALERTS</h2>
         <div id="myMessagesArea" style="width:100%; max-width:400px; margin-bottom: 20px;"></div>
 
-        <h2 style="font-size: 1rem; color: var(--neon-blue);">MY HISTORY</h2>
+        <h2 style="font-size: 1rem; color: var(--neon-blue);">MY FOLDERS</h2>
         <div id="myUploadsArea" style="width:100%; max-width:400px;"></div>
+    </div>
+
+    <div id="editFolderPage" class="page">
+        <div class="back-btn" onclick="window.navigateTo('dashboardPage')">← BACK TO VAULT</div>
+        <h1 id="editFolderTitle">FOLDER</h1>
+        <p style="text-align:center; color:#888; font-size:0.8rem; margin-top:-10px;">Remove specific pages below.</p>
+        <div id="editFolderImages" style="width:100%; max-width:400px; display:flex; flex-direction:column; gap:10px;"></div>
     </div>
 
     <div id="subjectPage" class="page"><div class="back-btn" onclick="window.navigateTo('homePage')">← BACK</div><h1>SUBJECTS</h1><div class="grid" id="subGrid"></div></div>
@@ -147,8 +147,10 @@
         
         <div class="glass-box" style="border-color: #ff4d4d;">
             <h2 style="font-size: 1rem; color: #ff4d4d; margin-top:0;">UPDATE NOTICE BOARD</h2>
-            <input type="text" id="adminNoticeInput" placeholder="Type new announcement...">
-            <button class="submit-btn" style="background: #ff4d4d;" onclick="window.updateNotice()">BROADCAST</button>
+            <textarea id="adminNoticeInput" placeholder="Write your announcement here..." style="width:100%; height:80px; border-radius:10px; padding:10px; background:#000; color:#fff; font-family:inherit; border:1px solid rgba(255,255,255,0.1); margin-bottom:10px; resize:none;"></textarea>
+            <p style="font-size:0.8rem; color:#aaa; margin:0 0 5px 0;">Attach Image (Optional):</p>
+            <input type="file" id="adminNoticeImg" accept="image/*">
+            <button class="submit-btn" style="background: #ff4d4d;" id="adminNoticeBtn" onclick="window.updateNotice()">BROADCAST TO HUB</button>
         </div>
 
         <h2 style="color:#ff4d4d; text-align:center;">STUDENT DATABASE</h2>
@@ -159,7 +161,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCo56hgaC3u_tBtS_bN0z2mrY9NQx0xZDg",
@@ -172,12 +174,8 @@
     };
 
     let app, db;
-    try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-    } catch(e) {
-        alert("Connection Error");
-    }
+    try { app = initializeApp(firebaseConfig); db = getFirestore(app); } 
+    catch(e) { alert("Connection Error"); }
 
     const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -188,8 +186,10 @@
     let selSub, selChap;
     let activeCommentListeners = [];
     window.loadedAlbums = {}; 
+    window.currentEditId = null;
 
-    window.navigateTo = (id) => {
+    // --- HARDWARE BACK BUTTON & NAVIGATION ---
+    window.showPage = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         if(id !== 'galleryPage') {
@@ -197,6 +197,22 @@
             activeCommentListeners = [];
         }
     };
+
+    window.navigateTo = (id) => {
+        history.pushState({page: id}, "", "#" + id);
+        window.showPage(id);
+    };
+
+    window.addEventListener('popstate', (e) => {
+        if(e.state && e.state.page) {
+            window.showPage(e.state.page);
+        } else {
+            window.showPage('gatePage'); // Default fallback
+        }
+    });
+
+    // Init history state
+    history.replaceState({page: 'gatePage'}, "", "#gatePage");
 
     // --- GATEWAY LOGIN ---
     window.gateLogin = async () => {
@@ -229,17 +245,16 @@
         if(code.length === 3 && name && pass) {
             const check = await getDoc(doc(db, "vaults", code));
             if(check.exists()) return alert("Code Taken");
-            
             await setDoc(doc(db, "vaults", code), { name, pass, code });
             alert("Created! Please Login.");
             window.navigateTo('gatePage');
         } else { alert("Invalid"); }
     };
 
-    // --- THE SECOND LOCK (POST & ADMIN) ---
+    // --- SECOND LOCK (POST/ADMIN) ---
     window.startVaultFlow = () => {
         const auth = prompt("ENTER AUTHORIZATION CODE:");
-        if(auth === "@RetroHope2026") {
+        if(auth === "@Retrospective2026") {
             window.loadAdminDashboard();
             window.navigateTo('adminPage');
         } else if (auth === "@777") {
@@ -249,14 +264,37 @@
         }
     };
 
-    // --- NOTICE BOARD ---
+    // --- UPGRADED NOTICE BOARD ---
     onSnapshot(doc(db, "system", "notice"), (docSnap) => {
-        if(docSnap.exists()) document.getElementById('noticeText').innerText = docSnap.data().text;
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('noticeText').innerText = data.text || "";
+            const imgEl = document.getElementById('noticeImg');
+            if(data.img) { imgEl.src = data.img; imgEl.style.display = "block"; }
+            else { imgEl.style.display = "none"; }
+        }
     });
+
     window.updateNotice = async () => {
         const txt = document.getElementById('adminNoticeInput').value;
-        if(txt) await setDoc(doc(db, "system", "notice"), { text: txt });
-        alert("Broadcasted!");
+        const file = document.getElementById('adminNoticeImg').files[0];
+        if(!txt && !file) return alert("Write a message or attach an image!");
+
+        const btn = document.getElementById('adminNoticeBtn');
+        btn.innerText = "Broadcasting..."; btn.disabled = true;
+
+        let imgUrl = "";
+        if(file) {
+            const fd = new FormData(); fd.append("image", file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+            const j = await res.json(); imgUrl = j.data.url;
+        }
+
+        await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
+        alert("Broadcasted to Hub!");
+        btn.innerText = "BROADCAST TO HUB"; btn.disabled = false;
+        document.getElementById('adminNoticeInput').value = "";
+        document.getElementById('adminNoticeImg').value = "";
     };
 
     // --- WANTED BOARD ---
@@ -267,7 +305,7 @@
             const list = document.getElementById('wantedList'); list.innerHTML = "";
             snap.forEach(d => {
                 const req = d.data();
-                let btn = `<button onclick="window.resolveRequest('${d.id}')" style="width:100%; background:var(--neon-blue); color:black; font-weight:bold; border:none; padding:8px; margin-top:5px; cursor:pointer;">✅ WISH FULFILLED</button>`;
+                let btn = `<button onclick="window.resolveRequest('${d.id}')" style="width:100%; background:var(--neon-blue); color:black; font-weight:bold; border:none; padding:8px; margin-top:5px; border-radius:5px; cursor:pointer;">✅ WISH FULFILLED</button>`;
                 list.innerHTML += `<div class="glass-box" style="padding:15px; border-color:#ffaa00;"><b>${req.author} asks:</b><br>${req.text}<br>${btn}</div>`;
             });
         });
@@ -278,10 +316,198 @@
     };
     window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
 
+    // --- FOLDER UPLOAD SYSTEM (APPEND/CREATE) ---
+    window.uploadNote = async () => {
+        const sub = document.getElementById('pSub').value;
+        const chap = document.getElementById('pChap').value.trim();
+        const files = document.getElementById('imgInp').files;
+        if(!chap || !files.length) return alert("Select File & Chapter");
+        
+        const btn = document.getElementById('upBtn');
+        btn.innerText = "Processing Pages..."; btn.disabled = true;
+
+        let newUrls = [];
+        
+        // Fix PDF Single Upload Bug: Loop through every single page
+        for(let f of files) {
+            if(f.type === "application/pdf") {
+                const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
+                for(let i=1; i<=pdf.numPages; i++) {
+                    const p = await pdf.getPage(i);
+                    const cvs = document.createElement('canvas');
+                    const v = p.getViewport({scale:1.5});
+                    cvs.height = v.height; cvs.width = v.width;
+                    await p.render({canvasContext: cvs.getContext('2d'), viewport: v}).promise;
+                    
+                    const fd = new FormData();
+                    fd.append("image", cvs.toDataURL("image/jpeg").split(',')[1]);
+                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+                    const j = await res.json(); newUrls.push(j.data.url);
+                }
+            } else { 
+                const fd = new FormData();
+                fd.append("image", f);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+                const j = await res.json(); newUrls.push(j.data.url);
+            }
+        }
+
+        btn.innerText = "Updating Folder...";
+
+        // FOLDER LOGIC: Check if this user already has a post for this subject + chapter
+        const q = query(collection(db, "all_notes"), where("vault_code", "==", currentVault.code), where("subject", "==", sub), where("chapter", "==", chap));
+        const snap = await getDocs(q);
+
+        if(!snap.empty) {
+            // FOLDER EXISTS -> Append the new images to the existing document
+            const existingDocId = snap.docs[0].id;
+            const existingUrls = snap.docs[0].data().urls || [];
+            const mergedUrls = [...existingUrls, ...newUrls];
+            await updateDoc(doc(db, "all_notes", existingDocId), { urls: mergedUrls });
+        } else {
+            // FOLDER DOES NOT EXIST -> Create new
+            await addDoc(collection(db, "all_notes"), {
+                author: currentVault.name, vault_code: currentVault.code,
+                display_author: currentVault.name,
+                subject: sub, chapter: chap, urls: newUrls
+            });
+        }
+
+        alert("Successfully Added to Folder!"); 
+        btn.innerText = "UPLOAD TO FOLDER"; btn.disabled = false;
+        document.getElementById('pChap').value = "";
+        document.getElementById('imgInp').value = "";
+    };
+
+    // --- FOLDER EDITING SYSTEM ---
+    window.editFolder = async (id) => {
+        window.currentEditId = id;
+        window.navigateTo('editFolderPage');
+        window.renderFolderEdit();
+    };
+
+    window.renderFolderEdit = async () => {
+        const area = document.getElementById('editFolderImages');
+        area.innerHTML = "Fetching Pages...";
+        const snap = await getDoc(doc(db, "all_notes", window.currentEditId));
+        if(!snap.exists()) return window.navigateTo('dashboardPage');
+        
+        const data = snap.data();
+        document.getElementById('editFolderTitle').innerText = `${data.subject}: ${data.chapter}`;
+        area.innerHTML = "";
+        
+        data.urls.forEach((url, idx) => {
+            area.innerHTML += `
+            <div class="glass-box" style="padding:10px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <img src="${url}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; border:1px solid #444;">
+                    <span style="font-weight:bold;">Page ${idx + 1}</span>
+                </div>
+                <button onclick="window.deletePageFromFolder('${window.currentEditId}', ${idx})" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:6px 12px; border-radius:5px; cursor:pointer; font-weight:bold;">DELETE</button>
+            </div>`;
+        });
+    };
+
+    window.deletePageFromFolder = async (id, idx) => {
+        if(!confirm("Remove this specific page from the folder?")) return;
+        const snap = await getDoc(doc(db, "all_notes", id));
+        let urls = snap.data().urls;
+        urls.splice(idx, 1); // Remove exactly that image
+
+        if(urls.length === 0) {
+            // If folder is empty, delete the whole post
+            await deleteDoc(doc(db, "all_notes", id));
+            window.navigateTo('dashboardPage');
+        } else {
+            // Update the document with remaining pages
+            await updateDoc(doc(db, "all_notes", id), { urls: urls });
+            window.renderFolderEdit(); // refresh list
+        }
+    };
+
+    // --- VIEWER ---
+    const subs = ["History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
+    subs.forEach(s => {
+        const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
+        b.onclick = () => loadChapters(s); document.getElementById('subGrid').appendChild(b);
+    });
+
+    async function loadChapters(s) {
+        selSub = s; window.navigateTo('chapterPage');
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", s)));
+        const chaps = new Set(); snap.forEach(d => chaps.add(d.data().chapter));
+        const g = document.getElementById('chapGrid'); g.innerHTML = "";
+        chaps.forEach(c => {
+            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
+            b.onclick = () => loadPosters(c); g.appendChild(b);
+        });
+    }
+
+    async function loadPosters(c) {
+        selChap = c; window.navigateTo('posterListPage');
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
+        const users = new Map();
+        snap.forEach(d => users.set(d.data().vault_code, d.data().display_author));
+        const g = document.getElementById('posterGrid'); g.innerHTML = "";
+        users.forEach((n, code) => {
+            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "Folder by " + n;
+            b.onclick = () => loadGallery(n, code); g.appendChild(b);
+        });
+    }
+
+    async function loadGallery(name, code) {
+        window.navigateTo('galleryPage');
+        const area = document.getElementById('notesArea'); area.innerHTML = "Opening Folder...";
+        const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code), where("chapter", "==", selChap)));
+        
+        area.innerHTML = `
+            <h2 style="margin-bottom:5px; text-align:center;">${selSub}: ${selChap}</h2>
+            <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:20px;">
+                <span style="color:#888; font-size:0.9rem;">By ${name}</span>
+                <span style="color:#333;">|</span>
+                <button onclick="window.sendMsg('${code}', '${name}')" style="background:transparent; color:var(--neon-blue); font-size:0.75rem; padding:0; border:none; text-decoration:underline; font-weight:bold; cursor:pointer;">Message Poster</button>
+            </div>`;
+
+        snap.forEach(d => {
+            const data = d.data();
+            window.loadedAlbums[d.id] = data.urls;
+            
+            area.innerHTML += `
+            <div class="note-card">
+                <img id="img_${d.id}" src="${data.urls[0]}" data-idx="0">
+                
+                ${data.urls.length > 1 ? `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:5px 10px; border-radius:8px; border:1px solid #333;">
+                    <button style="background:transparent; border:none; color:white; font-weight:bold; cursor:pointer;" onclick="window.flip('${d.id}', -1)">◀ PREV</button>
+                    <span id="txt_${d.id}" style="font-size:0.8rem; color:#888;">Page 1 of ${data.urls.length}</span>
+                    <button style="background:transparent; border:none; color:white; font-weight:bold; cursor:pointer;" onclick="window.flip('${d.id}', 1)">NEXT ▶</button>
+                </div>` : ''}
+
+                <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                    <button style="background:transparent; border:none; color:#ff4d4d; font-size:0.7rem; text-decoration:underline; cursor:pointer;" onclick="window.flagNote('${code}', '${selSub}', '${selChap}')">Report Issue</button>
+                </div>
+
+                <div class="comment-area" id="c_${d.id}"></div>
+                <div class="comment-input-grp"><input id="in_${d.id}" placeholder="Write a comment..."><button onclick="window.postComm('${d.id}')">Post</button></div>
+            </div>`;
+            listenComments(d.id);
+        });
+    }
+
+    window.flip = (id, dir) => {
+        const img = document.getElementById(`img_${id}`);
+        const txt = document.getElementById(`txt_${id}`);
+        const urls = window.loadedAlbums[id];
+        let idx = parseInt(img.dataset.idx) + dir;
+        if(idx >= 0 && idx < urls.length) { 
+            img.src = urls[idx]; img.dataset.idx = idx; 
+            if(txt) txt.innerText = `Page ${idx + 1} of ${urls.length}`;
+        }
+    };
+
     // --- ADMIN TOOLS ---
     window.loadAdminDashboard = async () => {
-        const list = document.getElementById('adminList');
-        list.innerHTML = "Loading...";
+        const list = document.getElementById('adminList'); list.innerHTML = "Loading...";
         const snap = await getDocs(collection(db, "vaults"));
         list.innerHTML = "";
         snap.forEach(d => {
@@ -301,7 +527,7 @@
     window.adminViewPosts = async (code) => {
         const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Scanning...";
         const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
-        div.innerHTML = `Posts: ${snap.size}`;
+        div.innerHTML = `Folders: ${snap.size}`;
     };
 
     window.adminSpyInbox = async (code) => {
@@ -329,120 +555,34 @@
         alert("User Wiped."); window.loadAdminDashboard();
     };
 
-    // --- UPLOAD ---
-    window.uploadNote = async () => {
-        const sub = document.getElementById('pSub').value;
-        const chap = document.getElementById('pChap').value;
-        const files = document.getElementById('imgInp').files;
-        if(!chap || !files.length) return alert("Select File & Chapter");
-        
-        const isGhost = document.getElementById('ghostCheck').checked;
-        const btn = document.getElementById('upBtn');
-        btn.innerText = "Syncing..."; btn.disabled = true;
-
-        let urls = [];
-        for(let f of files) {
-            const fd = new FormData();
-            if(f.type === "application/pdf") {
-                const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
-                for(let i=1; i<=pdf.numPages; i++) {
-                    const p = await pdf.getPage(i);
-                    const cvs = document.createElement('canvas');
-                    const v = p.getViewport({scale:1.5});
-                    cvs.height = v.height; cvs.width = v.width;
-                    await p.render({canvasContext: cvs.getContext('2d'), viewport: v}).promise;
-                    fd.append("image", cvs.toDataURL("image/jpeg").split(',')[1]);
-                }
-            } else { fd.append("image", f); }
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-            const j = await res.json(); urls.push(j.data.url);
-        }
-
-        await addDoc(collection(db, "all_notes"), {
-            author: currentVault.name, vault_code: currentVault.code,
-            display_author: isGhost ? "Ghost 👻" : currentVault.name,
-            subject: sub, chapter: chap, urls: urls
-        });
-        alert("Posted!"); btn.innerText = "BROADCAST TO HUB"; btn.disabled = false;
-    };
-
-    // --- VIEWER ---
-    const subs = ["History", "Geography", "Civics", "Economics", "Computer", "Science", "H.Lang", "H.Lit", "Eng Lang", "Eng Lit", "Maths", "G.K"];
-    subs.forEach(s => {
-        const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
-        b.onclick = () => loadChapters(s); document.getElementById('subGrid').appendChild(b);
-    });
-
-    async function loadChapters(s) {
-        selSub = s; window.navigateTo('chapterPage');
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", s)));
-        const chaps = new Set(); snap.forEach(d => chaps.add(d.data().chapter));
-        const g = document.getElementById('chapGrid'); g.innerHTML = "";
-        chaps.forEach(c => {
-            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
-            b.onclick = () => loadPosters(c); g.appendChild(b);
-        });
-    }
-
-    async function loadPosters(c) {
-        selChap = c; window.navigateTo('posterListPage');
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
-        const users = new Map();
-        snap.forEach(d => users.set(d.data().vault_code, d.data().display_author));
-        const g = document.getElementById('posterGrid'); g.innerHTML = "";
-        users.forEach((n, code) => {
-            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "By " + n;
-            b.onclick = () => loadGallery(n, code); g.appendChild(b);
-        });
-    }
-
-    async function loadGallery(name, code) {
-        window.navigateTo('galleryPage');
-        const a = document.getElementById('notesArea'); a.innerHTML = "Loading...";
-        const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code), where("chapter", "==", selChap)));
-        
-        a.innerHTML = `<h2>${selSub}: ${selChap}</h2><p style="text-align:center">By ${name}</p>`;
-        if(name !== "Ghost 👻") a.innerHTML += `<button onclick="window.sendMessageToPoster('${code}', '${name}')" class="submit-btn" style="margin-bottom:10px;">✉️ MESSAGE</button>`;
-
-        snap.forEach(d => {
-            const data = d.data();
-            window.loadedAlbums[d.id] = data.urls;
-            a.innerHTML += `<div class="note-card">
-                <img id="img_${d.id}" src="${data.urls[0]}" data-idx="0">
-                ${data.urls.length > 1 ? `<div style="display:flex; justify-content:space-between;"><button style="background:#333; color:#fff; border:none; padding:5px;" onclick="window.flip('${d.id}', -1)">Prev</button><button style="background:#333; color:#fff; border:none; padding:5px;" onclick="window.flip('${d.id}', 1)">Next</button></div>` : ''}
-                <button style="width:100%; margin-top:10px; color:#ff4d4d; border:1px solid red; background:transparent;" onclick="window.reportBlurry('${code}', '${selSub}', '${selChap}')">Report Blurry</button>
-                <div class="comment-area" id="c_${d.id}"></div>
-                <div class="comment-input-grp"><input id="in_${d.id}" placeholder="Comment..."><button onclick="window.postComm('${d.id}')">Post</button></div>
-            </div>`;
-            listenComments(d.id);
-        });
-    }
-
-    window.flip = (id, dir) => {
-        const img = document.getElementById(`img_${id}`);
-        const urls = window.loadedAlbums[id];
-        let idx = parseInt(img.dataset.idx) + dir;
-        if(idx >= 0 && idx < urls.length) { img.src = urls[idx]; img.dataset.idx = idx; }
-    };
-
+    // --- SYNC HELPERS ---
     function enableGlobalSync(c) {
         onSnapshot(query(collection(db, "all_notes"), where("vault_code", "==", c)), snap => {
-            const d = document.getElementById('myUploadsArea'); d.innerHTML = "";
-            snap.forEach(x => d.innerHTML += `<div class="glass-box" style="padding:10px;">${x.data().subject} - ${x.data().chapter} <button style="float:right; background:red; border:none; color:white; cursor:pointer;" onclick="window.delNote('${x.id}')">X</button></div>`);
+            const a = document.getElementById('myUploadsArea'); a.innerHTML = "";
+            snap.forEach(d => {
+                a.innerHTML += `
+                <div class="glass-box" style="padding:15px; margin-bottom:10px;">
+                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">${d.data().subject}</div>
+                    <div style="color:#aaa; font-size:0.9rem;">${d.data().chapter} • ${d.data().urls.length} Pages</div>
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <button onclick="window.editFolder('${d.id}')" style="flex:1; background:var(--neon-blue); color:#000; border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer;">EDIT FOLDER</button>
+                        <button onclick="window.delNote('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:8px; border-radius:5px; cursor:pointer;">DELETE ALL</button>
+                    </div>
+                </div>`;
+            });
         });
     }
-    window.delNote = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "all_notes", id)); };
+    window.delNote = async (id) => { if(confirm("Delete entire folder?")) await deleteDoc(doc(db, "all_notes", id)); };
 
     function enableMessageSync(c) {
         onSnapshot(query(collection(db, "messages"), where("to_code", "==", c)), snap => {
             const d = document.getElementById('myMessagesArea'); d.innerHTML = "";
-            snap.forEach(x => d.innerHTML += `<div class="glass-box" style="padding:10px; border-color:var(--neon-purple);"><b style="color:var(--neon-purple)">${x.data().from}:</b> ${x.data().text} <button style="float:right; background:#333; border:none; color:white;" onclick="window.delMsg('${x.id}')">X</button></div>`);
+            snap.forEach(x => d.innerHTML += `<div class="glass-box" style="padding:10px; border-color:var(--neon-purple);"><b style="color:var(--neon-purple)">${x.data().from}:</b> ${x.data().text} <button style="float:right; background:#333; border:none; color:white; padding:2px 8px; border-radius:4px; cursor:pointer;" onclick="window.delMsg('${x.id}')">X</button></div>`);
         });
     }
     window.delMsg = async (id) => await deleteDoc(doc(db, "messages", id));
-    window.sendMessageToPoster = async (c, n) => { const m = prompt("Message:"); if(m) await addDoc(collection(db, "messages"), { to_code: c, from: currentVault.name, text: m }); };
-    window.reportBlurry = async (c, s, ch) => { if(confirm("Report?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Re-upload ${s} ${ch}` }); };
-    
+    window.reportBlurry = async (c, s, ch) => { if(confirm("Report blurry?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Please check ${s} ${ch}` }); };
+
     function listenComments(id) {
         onSnapshot(query(collection(db, "comments"), where("note_id", "==", id)), snap => {
             const d = document.getElementById(`c_${id}`); d.innerHTML = "";
