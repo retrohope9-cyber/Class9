@@ -20,13 +20,14 @@
         .item-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 600; text-transform: uppercase; color: #fff; transition: 0.2s; }
         .item-btn:active { background: var(--neon-blue); color: #000; }
         .glass-box { background: var(--glass); padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 20px; box-sizing: border-box;}
-        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #000; color: #fff; font-family: inherit; box-sizing: border-box; }
+        input, select, button, textarea { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #000; color: #fff; font-family: inherit; box-sizing: border-box; }
         .submit-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); border: none; font-weight: bold; cursor: pointer;}
         .note-card { background: var(--glass); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; box-sizing: border-box; }
         .note-card img { width: 100%; border-radius: 10px; border: 1px solid var(--neon-purple); margin-bottom: 10px; }
         .back-btn { align-self: flex-start; margin-bottom: 15px; color: var(--neon-blue); font-weight: bold; cursor: pointer; }
         
-        .notice-board { width: 100%; max-width: 400px; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-sizing: border-box;}
+        .notice-board { width: 100%; max-width: 400px; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box;}
+        .inbox-board { width: 100%; max-width: 400px; background: rgba(0, 210, 255, 0.05); border: 1px solid var(--neon-blue); padding: 15px; border-radius: 10px; margin-bottom: 20px; box-sizing: border-box; max-height: 350px; overflow-y: auto;}
         
         .comment-area { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 0.8rem; }
         .comment-msg { font-size: 0.8rem; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
@@ -72,6 +73,13 @@
             <strong style="color: #ff4d4d; font-size: 0.9rem;">ADMIN BROADCAST:</strong>
             <div id="noticeText" style="margin-top:8px; font-size:0.85rem; color:#ddd; font-weight:normal; line-height:1.4;">Syncing...</div>
             <img id="noticeImg" src="" style="width:100%; border-radius:8px; margin-top:10px; display:none; border:1px solid #444;">
+        </div>
+
+        <div class="inbox-board">
+            <strong style="color: var(--neon-blue); font-size: 0.8rem;">SYSTEM UPDATES INBOX:</strong>
+            <div id="adminFeedArea" style="margin-top:10px; font-size:0.8rem; color:#ccc; display:flex; flex-direction:column; gap:8px;">
+                <i style="color:#666;">No recent messages...</i>
+            </div>
         </div>
 
         <div style="display:flex; flex-direction:column; gap:12px; width: 100%; max-width: 400px;">
@@ -145,23 +153,44 @@
         <div class="back-btn" onclick="window.navigateTo('homePage')">← CLOSE</div>
         <h1 style="color: #ff4d4d; text-shadow: 0 0 10px red;">GOD MODE</h1>
         
-        <div class="glass-box" style="border-color: #ff4d4d;">
-            <h2 style="font-size: 1rem; color: #ff4d4d; margin-top:0;">UPDATE NOTICE BOARD</h2>
-            <textarea id="adminNoticeInput" placeholder="Write your announcement here..." style="width:100%; height:80px; border-radius:10px; padding:10px; background:#000; color:#fff; font-family:inherit; border:1px solid rgba(255,255,255,0.1); margin-bottom:10px; resize:none;"></textarea>
-            <p style="font-size:0.8rem; color:#aaa; margin:0 0 5px 0;">Attach Image (Optional):</p>
-            <input type="file" id="adminNoticeImg" accept="image/*">
-            <button class="submit-btn" style="background: #ff4d4d;" id="adminNoticeBtn" onclick="window.updateNotice()">BROADCAST TO HUB</button>
+        <div class="glass-box" style="border-color: #ffaa00; background:rgba(255,170,0,0.05);">
+            <h2 style="font-size: 1rem; color: #ffaa00; margin-top:0;">SYSTEM SECURITY</h2>
+            <p style="font-size:0.8rem; color:#aaa; margin:0 0 10px 0;">Change the Authorization Code required to post notes.</p>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="adminNewPosterCode" placeholder="Current: Syncing..." style="margin:0;">
+                <button class="submit-btn" style="background: #ffaa00; color:#000; width:auto;" onclick="window.updatePosterCode()">SET</button>
+            </div>
         </div>
 
-        <h2 style="color:#ff4d4d; text-align:center;">STUDENT DATABASE</h2>
-        <div id="adminList" style="width: 100%; max-width: 600px;"></div>
+        <div class="glass-box" style="border-color: #ff4d4d;">
+            <h2 style="font-size: 1rem; color: #ff4d4d; margin-top:0;">GLOBAL BROADCAST</h2>
+            <textarea id="adminNoticeInput" placeholder="Write major announcement..." style="height:60px; resize:none;"></textarea>
+            <p style="font-size:0.8rem; color:#aaa; margin:0 0 5px 0;">Attach Image:</p>
+            <input type="file" id="adminNoticeImg" accept="image/*">
+            <button class="submit-btn" style="background: #ff4d4d;" id="adminNoticeBtn" onclick="window.updateNotice()">BROADCAST</button>
+        </div>
+
+        <div class="glass-box" style="border-color: var(--neon-blue);">
+            <h2 style="font-size: 1rem; color: var(--neon-blue); margin-top:0;">SEND UPDATE TO INBOX</h2>
+            <input type="text" id="adminFeedInput" placeholder="Type a message to the inbox..." style="margin:0 0 10px 0;">
+            <p style="font-size:0.8rem; color:#aaa; margin:0 0 5px 0;">Attach Image (Optional):</p>
+            <div style="display:flex; gap:5px;">
+                <input type="file" id="adminFeedImg" accept="image/*" style="margin:0;">
+                <button class="submit-btn" id="adminFeedBtn" style="width:auto; padding:0 20px;" onclick="window.postAdminFeed()">SEND</button>
+            </div>
+            <div id="adminFeedManageArea" style="margin-top:15px; display:flex; flex-direction:column; gap:5px;">
+                </div>
+        </div>
+
+        <h2 style="color:#ff4d4d; text-align:center;">SYSTEM RADAR (DATABASE)</h2>
+        <div id="adminList" style="width: 100%; max-width: 600px; display:flex; flex-direction:column; gap:15px;"></div>
     </div>
 
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot, updateDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCo56hgaC3u_tBtS_bN0z2mrY9NQx0xZDg",
@@ -182,13 +211,31 @@
     if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
     let currentVault = null;
-    let liveSync, messageSync, wantedSync;
+    let liveSync, messageSync, wantedSync, feedSync, adminFeedSync;
     let selSub, selChap;
     let activeCommentListeners = [];
     window.loadedAlbums = {}; 
     window.currentEditId = null;
 
-    // --- HARDWARE BACK BUTTON & NAVIGATION ---
+    // --- SYSTEM SECRETS ---
+    window.systemPosterCode = "@777"; 
+    onSnapshot(doc(db, "system", "config"), (d) => {
+        if(d.exists() && d.data().poster_code) {
+            window.systemPosterCode = d.data().poster_code;
+            const inputEl = document.getElementById('adminNewPosterCode');
+            if(inputEl) inputEl.placeholder = `Current: ${window.systemPosterCode}`;
+        }
+    });
+
+    window.updatePosterCode = async () => {
+        const nc = document.getElementById('adminNewPosterCode').value.trim();
+        if(!nc) return;
+        await setDoc(doc(db, "system", "config"), { poster_code: nc }, { merge: true });
+        document.getElementById('adminNewPosterCode').value = "";
+        alert("SYSTEM SECURITY UPDATED. New poster code is active.");
+    };
+
+    // --- HARDWARE BACK BUTTON ---
     window.showPage = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -197,22 +244,24 @@
             activeCommentListeners = [];
         }
     };
-
-    window.navigateTo = (id) => {
-        history.pushState({page: id}, "", "#" + id);
-        window.showPage(id);
-    };
-
+    window.navigateTo = (id) => { history.pushState({page: id}, "", "#" + id); window.showPage(id); };
     window.addEventListener('popstate', (e) => {
-        if(e.state && e.state.page) {
-            window.showPage(e.state.page);
-        } else {
-            window.showPage('gatePage'); // Default fallback
-        }
+        if(e.state && e.state.page) { window.showPage(e.state.page); } 
+        else { window.showPage('gatePage'); }
     });
-
-    // Init history state
     history.replaceState({page: 'gatePage'}, "", "#gatePage");
+
+    // --- UTILITY: TIME AGO FORMATTER ---
+    function timeAgo(ms) {
+        if(!ms) return "Never";
+        const diff = Date.now() - ms;
+        const mins = Math.floor(diff / 60000);
+        if(mins < 1) return "Just now";
+        if(mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if(hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs/24)}d ago`;
+    }
 
     // --- GATEWAY LOGIN ---
     window.gateLogin = async () => {
@@ -224,17 +273,17 @@
             const snap = await getDoc(doc(db, "vaults", code));
             if(snap.exists() && snap.data().pass === pass) {
                 currentVault = snap.data();
-                if(currentVault.code === "777") currentVault.name = "Retro Hope";
                 
+                await updateDoc(doc(db, "vaults", code), { last_active: Date.now() });
+
                 document.getElementById('userDisplay').innerText = currentVault.name;
                 document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
                 
                 enableMessageSync(currentVault.code);
                 enableGlobalSync(currentVault.code);
+                enableFeedSync();
                 window.navigateTo('homePage');
-            } else {
-                alert("Incorrect Code or Password");
-            }
+            } else { alert("Incorrect Code or Password"); }
         } catch(e) { alert("Network Error"); }
     };
 
@@ -245,7 +294,7 @@
         if(code.length === 3 && name && pass) {
             const check = await getDoc(doc(db, "vaults", code));
             if(check.exists()) return alert("Code Taken");
-            await setDoc(doc(db, "vaults", code), { name, pass, code });
+            await setDoc(doc(db, "vaults", code), { name, pass, code, last_active: Date.now() });
             alert("Created! Please Login.");
             window.navigateTo('gatePage');
         } else { alert("Invalid"); }
@@ -257,14 +306,14 @@
         if(auth === "@Retrospective2026") {
             window.loadAdminDashboard();
             window.navigateTo('adminPage');
-        } else if (auth === "@777") {
+        } else if (auth === window.systemPosterCode) {
             window.navigateTo('dashboardPage');
         } else {
-            alert("ACCESS DENIED: Students cannot post.");
+            alert("ACCESS DENIED: Incorrect Code.");
         }
     };
 
-    // --- UPGRADED NOTICE BOARD ---
+    // --- GLOBAL BROADCAST ---
     onSnapshot(doc(db, "system", "notice"), (docSnap) => {
         if(docSnap.exists()) {
             const data = docSnap.data();
@@ -278,7 +327,7 @@
     window.updateNotice = async () => {
         const txt = document.getElementById('adminNoticeInput').value;
         const file = document.getElementById('adminNoticeImg').files[0];
-        if(!txt && !file) return alert("Write a message or attach an image!");
+        if(!txt && !file) return;
 
         const btn = document.getElementById('adminNoticeBtn');
         btn.innerText = "Broadcasting..."; btn.disabled = true;
@@ -292,10 +341,52 @@
 
         await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
         alert("Broadcasted to Hub!");
-        btn.innerText = "BROADCAST TO HUB"; btn.disabled = false;
+        btn.innerText = "BROADCAST"; btn.disabled = false;
         document.getElementById('adminNoticeInput').value = "";
         document.getElementById('adminNoticeImg').value = "";
     };
+
+    // --- FEED (SYSTEM INBOX WITH IMAGES) ---
+    function enableFeedSync() {
+        if(feedSync) feedSync();
+        feedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), (snap) => {
+            const area = document.getElementById('adminFeedArea');
+            area.innerHTML = "";
+            if(snap.empty) { area.innerHTML = "<i style='color:#666;'>No recent messages...</i>"; return; }
+            snap.forEach(d => {
+                const data = d.data();
+                let imgHtml = data.img ? `<img src="${data.img}" style="width:100%; border-radius:8px; margin-top:8px; border:1px solid #333;">` : "";
+                area.innerHTML += `<div style="padding-bottom:15px; border-bottom:1px solid #222; margin-bottom:12px;">
+                    <div>${data.text}</div>
+                    ${imgHtml}
+                </div>`;
+            });
+        });
+    }
+
+    window.postAdminFeed = async () => {
+        const t = document.getElementById('adminFeedInput').value.trim();
+        const file = document.getElementById('adminFeedImg').files[0];
+        if(!t && !file) return;
+
+        const btn = document.getElementById('adminFeedBtn');
+        btn.innerText = "SENDING..."; btn.disabled = true;
+
+        let imgUrl = "";
+        if(file) {
+            const fd = new FormData(); fd.append("image", file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+            const j = await res.json(); imgUrl = j.data.url;
+        }
+
+        await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
+        
+        document.getElementById('adminFeedInput').value = "";
+        document.getElementById('adminFeedImg').value = "";
+        btn.innerText = "SEND"; btn.disabled = false;
+    };
+
+    window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
 
     // --- WANTED BOARD ---
     window.openWantedBoard = () => {
@@ -304,9 +395,9 @@
         wantedSync = onSnapshot(collection(db, "wanted"), (snap) => {
             const list = document.getElementById('wantedList'); list.innerHTML = "";
             snap.forEach(d => {
-                const req = d.data();
+                const r = d.data();
                 let btn = `<button onclick="window.resolveRequest('${d.id}')" style="width:100%; background:var(--neon-blue); color:black; font-weight:bold; border:none; padding:8px; margin-top:5px; border-radius:5px; cursor:pointer;">✅ WISH FULFILLED</button>`;
-                list.innerHTML += `<div class="glass-box" style="padding:15px; border-color:#ffaa00;"><b>${req.author} asks:</b><br>${req.text}<br>${btn}</div>`;
+                list.innerHTML += `<div class="glass-box" style="padding:15px; border-color:#ffaa00;"><b>${r.author} asks:</b><br>${r.text}<br>${btn}</div>`;
             });
         });
     };
@@ -316,7 +407,7 @@
     };
     window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
 
-    // --- FOLDER UPLOAD SYSTEM (APPEND/CREATE) ---
+    // --- FOLDER UPLOAD SYSTEM ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
         const chap = document.getElementById('pChap').value.trim();
@@ -327,8 +418,6 @@
         btn.innerText = "Processing Pages..."; btn.disabled = true;
 
         let newUrls = [];
-        
-        // Fix PDF Single Upload Bug: Loop through every single page
         for(let f of files) {
             if(f.type === "application/pdf") {
                 const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
@@ -354,21 +443,18 @@
 
         btn.innerText = "Updating Folder...";
 
-        // FOLDER LOGIC: Check if this user already has a post for this subject + chapter
         const q = query(collection(db, "all_notes"), where("vault_code", "==", currentVault.code), where("subject", "==", sub), where("chapter", "==", chap));
         const snap = await getDocs(q);
 
         if(!snap.empty) {
-            // FOLDER EXISTS -> Append the new images to the existing document
             const existingDocId = snap.docs[0].id;
             const existingUrls = snap.docs[0].data().urls || [];
             const mergedUrls = [...existingUrls, ...newUrls];
             await updateDoc(doc(db, "all_notes", existingDocId), { urls: mergedUrls });
         } else {
-            // FOLDER DOES NOT EXIST -> Create new
             await addDoc(collection(db, "all_notes"), {
                 author: currentVault.name, vault_code: currentVault.code,
-                display_author: currentVault.name,
+                display_author: currentVault.name, 
                 subject: sub, chapter: chap, urls: newUrls
             });
         }
@@ -412,16 +498,14 @@
         if(!confirm("Remove this specific page from the folder?")) return;
         const snap = await getDoc(doc(db, "all_notes", id));
         let urls = snap.data().urls;
-        urls.splice(idx, 1); // Remove exactly that image
+        urls.splice(idx, 1);
 
         if(urls.length === 0) {
-            // If folder is empty, delete the whole post
             await deleteDoc(doc(db, "all_notes", id));
             window.navigateTo('dashboardPage');
         } else {
-            // Update the document with remaining pages
             await updateDoc(doc(db, "all_notes", id), { urls: urls });
-            window.renderFolderEdit(); // refresh list
+            window.renderFolderEdit(); 
         }
     };
 
@@ -505,22 +589,45 @@
         }
     };
 
-    // --- ADMIN TOOLS ---
+    // --- SYSTEM RADAR / ADMIN TOOLS ---
     window.loadAdminDashboard = async () => {
-        const list = document.getElementById('adminList'); list.innerHTML = "Loading...";
+        const list = document.getElementById('adminList'); list.innerHTML = "Loading Radar...";
         const snap = await getDocs(collection(db, "vaults"));
         list.innerHTML = "";
         snap.forEach(d => {
             const u = d.data();
-            list.innerHTML += `<div class="glass-box" style="border-color:#ff4d4d; padding:10px;">
-                <h3>${u.name} (${u.code})</h3><p>Pass: <span style="color:#ffaa00">${u.pass}</span></p>
+            const lastActive = u.last_active ? timeAgo(u.last_active) : "Unknown";
+
+            list.innerHTML += `
+            <div class="glass-box" style="border-color:#ff4d4d; padding:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0; color:#ff4d4d;">${u.name}</h3>
+                    <span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${lastActive}</span>
+                </div>
+                <p style="margin:10px 0;">ID: <b>${u.code}</b> | Pass: <span style="color:#ffaa00">${u.pass}</span></p>
                 <div style="display:flex; gap:5px;">
                     <button class="submit-btn" style="background:#444; flex:1;" onclick="window.adminViewPosts('${u.code}')">POSTS</button>
                     <button class="submit-btn" style="background:#222; border:1px solid #555; flex:1;" onclick="window.adminSpyInbox('${u.code}')">SPY</button>
                     <button class="submit-btn" style="background:#ff4d4d; flex:1;" onclick="window.forcePurge('${u.code}', '${u.name}')">NUKE</button>
                 </div>
-                <div id="adminData_${u.code}" style="margin-top:5px; font-size:0.8rem; color:#aaa;"></div>
+                <div id="adminData_${u.code}" style="margin-top:10px; font-size:0.8rem; color:#aaa;"></div>
             </div>`;
+        });
+
+        // Load Feed management
+        if(adminFeedSync) adminFeedSync();
+        adminFeedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), snap => {
+            const mg = document.getElementById('adminFeedManageArea');
+            mg.innerHTML = "";
+            snap.forEach(d => {
+                const data = d.data();
+                let imgThumb = data.img ? `<br><img src="${data.img}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; margin-top:5px; border:1px solid #444;">` : "";
+                
+                mg.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; border-radius:5px; align-items:center; font-size:0.8rem; border:1px solid #222;">
+                    <div style="flex:1; padding-right:10px;">${data.text} ${imgThumb}</div>
+                    <button onclick="window.delAdminFeed('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button>
+                </div>`;
+            });
         });
     };
 
@@ -534,7 +641,7 @@
         const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Spying...";
         const snap = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
         div.innerHTML = snap.empty ? "Inbox Empty" : "";
-        snap.forEach(m => div.innerHTML += `<div><b>${m.data().from}:</b> ${m.data().text}</div>`);
+        snap.forEach(m => div.innerHTML += `<div style="border-left:2px solid red; padding-left:5px; margin-bottom:5px;"><b>${m.data().from}:</b> ${m.data().text}</div>`);
     };
 
     window.forcePurge = async (code, name) => {
@@ -555,7 +662,7 @@
         alert("User Wiped."); window.loadAdminDashboard();
     };
 
-    // --- SYNC HELPERS ---
+    // --- GENERAL SYNC HELPERS ---
     function enableGlobalSync(c) {
         onSnapshot(query(collection(db, "all_notes"), where("vault_code", "==", c)), snap => {
             const a = document.getElementById('myUploadsArea'); a.innerHTML = "";
@@ -581,7 +688,8 @@
         });
     }
     window.delMsg = async (id) => await deleteDoc(doc(db, "messages", id));
-    window.reportBlurry = async (c, s, ch) => { if(confirm("Report blurry?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Please check ${s} ${ch}` }); };
+    window.sendMsg = async (c, n) => { const m = prompt("Message:"); if(m) await addDoc(collection(db, "messages"), { to_code: c, from: currentVault.name, text: m }); };
+    window.flagNote = async (c, s, ch) => { if(confirm("Report blurry?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Please check ${s} ${ch}` }); };
 
     function listenComments(id) {
         onSnapshot(query(collection(db, "comments"), where("note_id", "==", id)), snap => {
