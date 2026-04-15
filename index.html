@@ -358,10 +358,21 @@
         if(code.length === 3 && name && pass) {
             const check = await getDoc(doc(db, "vaults", code));
             if(check.exists()) return alert("Code Taken");
+            
+            // Register & Auto-login
             await setDoc(doc(db, "vaults", code), { name, pass, code, last_active: Date.now() });
-            alert("Created! Please Login.");
-            window.navigateTo('gatePage');
-        } else { alert("Invalid"); }
+            
+            currentVault = { name, pass, code };
+            document.getElementById('userDisplay').innerText = currentVault.name;
+            document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
+            
+            enableMessageSync(currentVault.code);
+            enableGlobalSync(currentVault.code);
+            enableFeedSync();
+            startLiveChatListener();
+            window.navigateTo('homePage');
+
+        } else { alert("Invalid inputs. Ensure 3-digit code."); }
     };
 
     // --- SECOND LOCK ---
@@ -377,7 +388,7 @@
         }
     };
 
-    // --- COMMUNITY HUB ---
+    // --- COMMUNITY HUB (20 MAX AUTO-CLEANUP) ---
     window.openCommunity = () => {
         window.navigateTo('communityPage');
         if(communitySync) communitySync();
@@ -472,7 +483,7 @@
                 const amIAdmin = d.admin_code === currentVault.code;
                 const amIStudent = d.student_code === currentVault.code;
 
-                // NEW PENDING REQUEST: Only the Student gets the Accept/Reject prompt
+                // 1. New Pending Request (Student side only)
                 if (change.type === 'added' && d.status === 'pending' && amIStudent) {
                     if (confirm("ADMIN WANTS TO TALK WITH YOU. Accept secure live chat?")) {
                         updateDoc(doc(db, "live_chats", change.doc.id), {status: 'active'});
@@ -481,27 +492,35 @@
                     }
                 }
 
-                // ACTIVE CHAT: Open the chat box for whoever is involved
+                // 2. Chat is Active (Admin & Student)
                 if (d.status === 'active') {
                     if (window.activeChatId !== change.doc.id) {
                         window.activeChatId = change.doc.id;
                         document.getElementById('liveChatBox').style.display = 'flex';
+                        document.getElementById('chatMsgArea').innerHTML = ""; // Clear waiting msg
                     }
                     if (window.activeChatId === change.doc.id) {
                         renderChatMessages(d.messages || []);
                     }
                 }
 
-                // CHAT CLOSED: Destroy the box
-                if (change.type === 'removed' && window.activeChatId === change.doc.id) {
-                    document.getElementById('liveChatBox').style.display = 'none';
-                    window.activeChatId = null;
-                    alert("The secure chat was closed.");
+                // 3. Chat is Closed
+                if (change.type === 'removed') {
+                    if(window.activeChatId === change.doc.id || (amIAdmin && d.status === 'pending')) {
+                        document.getElementById('liveChatBox').style.display = 'none';
+                        window.activeChatId = null;
+                        if(d.status === 'pending' && amIAdmin) {
+                            // If it was removed while pending, student rejected it. No annoying alert, just reset.
+                        } else {
+                            // Only alert if it was actively open
+                            alert("The secure chat was closed.");
+                        }
+                    }
                 }
             });
         };
 
-        // Listen for chats where I am the Admin OR I am the Student
+        // Listen for chats where user is involved
         const qAdmin = query(collection(db, "live_chats"), where("admin_code", "==", currentVault.code));
         const qStudent = query(collection(db, "live_chats"), where("student_code", "==", currentVault.code));
         
@@ -509,8 +528,21 @@
         window.chatUnsubStudent = onSnapshot(qStudent, handleChatChanges);
     }
 
+    window.requestAdminChat = async (studentCode) => {
+        const chatId = currentVault.code + "_" + studentCode;
+        await setDoc(doc(db, "live_chats", chatId), {
+            admin_code: currentVault.code, student_code: studentCode, status: 'pending', messages: []
+        });
+        
+        // Open the box instantly for the Admin in a "Waiting" state
+        window.activeChatId = chatId;
+        document.getElementById('liveChatBox').style.display = 'flex';
+        document.getElementById('chatMsgArea').innerHTML = `<div style="color:#ffaa00; font-size:0.8rem; text-align:center; padding-top:20px;">Waiting for student to connect...</div>`;
+    };
+
     function renderChatMessages(msgs) {
-        const area = document.getElementById('chatMsgArea'); area.innerHTML = "";
+        const area = document.getElementById('chatMsgArea'); 
+        area.innerHTML = "";
         msgs.forEach(m => {
             // Dynamic Coloring: Your messages are green, their messages are red
             let color = m.from === currentVault.name ? "#0aff0a" : "#ff4d4d";
@@ -531,9 +563,11 @@
             document.getElementById('liveChatInput').value = "";
         }
     };
+    
     window.endChat = async () => {
         if(window.activeChatId) await deleteDoc(doc(db, "live_chats", window.activeChatId));
-        document.getElementById('liveChatBox').style.display = 'none'; window.activeChatId = null;
+        document.getElementById('liveChatBox').style.display = 'none'; 
+        window.activeChatId = null;
     };
 
     // --- BROADCAST ---
@@ -563,7 +597,7 @@
         document.getElementById('adminNoticeInput').value = ""; document.getElementById('adminNoticeImg').value = "";
     };
 
-    // --- FEED INBOX ---
+    // --- FEED INBOX (20 MAX AUTO-CLEANUP) ---
     function enableFeedSync() {
         if(feedSync) feedSync();
         feedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), (snap) => {
@@ -603,7 +637,7 @@
     };
     window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
 
-    // --- WANTED BOARD ---
+    // --- WANTED BOARD (20 MAX) ---
     window.openWantedBoard = () => {
         window.navigateTo('wantedPage');
         if(wantedSync) wantedSync();
@@ -656,7 +690,7 @@
                     const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
                     const j = await res.json(); newUrls.push(j.data.url);
                 }
-            } else { 
+   } else { 
                 const fd = new FormData();
                 fd.append("image", f);
                 const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
@@ -808,6 +842,7 @@
         });
     }
 
+    // ZOOM SYSTEM
     window.openZoom = (id) => {
         window.currentZoomId = id;
         const img = document.getElementById(`img_${id}`);
@@ -825,7 +860,10 @@
         }
     };
 
-    window.closeZoom = () => { document.getElementById('zoomModal').style.display = 'none'; window.currentZoomId = null; };
+    window.closeZoom = () => {
+        document.getElementById('zoomModal').style.display = 'none';
+        window.currentZoomId = null;
+    };
 
     window.zoomFlip = (dir) => {
         if(!window.currentZoomId) return;
@@ -838,6 +876,7 @@
             img.dataset.idx = idx; 
             document.getElementById('zoomedImg').src = urls[idx];
             document.getElementById('zoomCounter').innerText = `PAGE ${idx + 1} OF ${urls.length}`;
+            
             const txt = document.getElementById(`txt_${id}`);
             if(txt) txt.innerText = `PAGE ${idx + 1} OF ${urls.length} (TAP TO JUMP)`;
         }
@@ -854,17 +893,19 @@
             img.src = urls[idx];
             img.dataset.idx = idx;
             txt.innerText = `PAGE ${idx + 1} OF ${urls.length} (TAP TO JUMP)`;
-        } else { alert("Invalid page number."); }
+        } else {
+            alert("Invalid page number.");
+        }
     };
 
-    // --- ADMIN DASHBOARD ---
+    // --- SYSTEM RADAR / ADMIN TOOLS ---
     window.loadAdminDashboard = async () => {
         const list = document.getElementById('adminList'); list.innerHTML = "Loading Radar...";
         const snap = await getDocs(collection(db, "vaults"));
         list.innerHTML = "";
         snap.forEach(d => {
             const u = d.data();
-            const isOnline = (Date.now() - (u.last_active || 0)) <= 15000; 
+            const isOnline = (Date.now() - (u.last_active || 0)) <= 15000; // 15 SECOND RULE
             const radarStatus = isOnline ? `<span style="font-size:0.7rem; background:#111; padding:3px 8px; border-radius:5px; border:1px solid #0aff0a; color:#0aff0a; font-weight:bold;">🟢 ONLINE</span>` : `<span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${timeAgo(u.last_active)}</span>`;
             
             const chatBtn = (isOnline && u.code !== currentVault.code) ? `<button class="submit-btn" style="background:#0aff0a; color:#000; flex:1;" onclick="window.requestAdminChat('${u.code}')">TALK</button>` : '';
@@ -897,14 +938,6 @@
                     <button onclick="window.delAdminFeed('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button></div>`;
             });
         });
-    };
-
-    window.requestAdminChat = async (studentCode) => {
-        const chatId = currentVault.code + "_" + studentCode;
-        await setDoc(doc(db, "live_chats", chatId), {
-            admin_code: currentVault.code, student_code: studentCode, status: 'pending', messages: []
-        });
-        alert("Talk request sent. Waiting for student to accept...");
     };
 
     window.adminViewPosts = async (code) => {
