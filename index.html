@@ -267,14 +267,13 @@
     if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
     let currentVault = null;
-    let liveSync, messageSync, wantedSync, feedSync, adminFeedSync, chatUnsub, communitySync, radarInterval;
+    let liveSync, messageSync, wantedSync, feedSync, adminFeedSync, communitySync;
     let selSub, selChap;
     let activeCommentListeners = [];
     window.loadedAlbums = {}; 
     window.currentEditId = null;
     window.activeChatId = null;
     window.currentZoomId = null;
-    window.latestVaults = [];
 
     // --- SYSTEM SECRETS ---
     window.systemPosterCode = "@777"; 
@@ -294,23 +293,11 @@
         alert("SYSTEM SECURITY UPDATED.");
     };
 
-    // --- TIME AGO (SMOOTH DISPLAY) ---
-    function timeAgo(ms) {
-        if(!ms) return "Never";
-        const diff = Date.now() - ms;
-        if(diff < 60000) return "<1m ago"; 
-        const mins = Math.floor(diff / 60000);
-        if(mins < 60) return `${mins}m ago`;
-        const hrs = Math.floor(mins / 60);
-        if(hrs < 24) return `${hrs}h ago`;
-        return `${Math.floor(hrs/24)}d ago`;
-    }
-
     // --- TRACKING & NAVIGATION ---
     window.updatePresence = () => {
         if(currentVault) { updateDoc(doc(db, "vaults", currentVault.code), { last_active: Date.now() }).catch(e=>{}); }
     };
-    setInterval(window.updatePresence, 10000); // Ping server every 10 seconds
+    setInterval(window.updatePresence, 10000);
 
     window.showPage = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -328,6 +315,17 @@
     });
     history.replaceState({page: 'gatePage'}, "", "#gatePage");
 
+    function timeAgo(ms) {
+        if(!ms) return "Never";
+        const diff = Date.now() - ms;
+        if(diff < 60000) return "<1m ago"; 
+        const mins = Math.floor(diff / 60000);
+        if(mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if(hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs/24)}d ago`;
+    }
+
     // --- GATEWAY LOGIN ---
     window.gateLogin = async () => {
         const code = document.getElementById('gCode').value;
@@ -338,7 +336,6 @@
             const snap = await getDoc(doc(db, "vaults", code));
             if(snap.exists() && snap.data().pass === pass) {
                 currentVault = snap.data();
-                if(currentVault.code === "777") currentVault.name = "Retrospective";
                 
                 await updateDoc(doc(db, "vaults", code), { last_active: Date.now() });
 
@@ -380,7 +377,7 @@
         }
     };
 
-    // --- COMMUNITY HUB (REPLIES & 20 LIMIT) ---
+    // --- COMMUNITY HUB ---
     window.openCommunity = () => {
         window.navigateTo('communityPage');
         if(communitySync) communitySync();
@@ -392,7 +389,6 @@
             snap.forEach(d => {
                 const p = d.data();
                 
-                // Reply Logic
                 let repliesHtml = "";
                 if(p.replies && p.replies.length > 0) {
                     p.replies.forEach(r => {
@@ -463,43 +459,61 @@
         alert("Community Hub has been completely wiped.");
     };
 
-    // --- LIVE CHAT SYSTEM ---
+    // --- REWRITTEN LIVE CHAT SYSTEM (ROBUST DUAL-LISTENER) ---
     function startLiveChatListener() {
         if(!currentVault) return;
-        const field = currentVault.name === "Retrospective" ? "admin_code" : "student_code";
-        const q = query(collection(db, "live_chats"), where(field, "==", currentVault.code));
         
-        if(chatUnsub) chatUnsub();
-        chatUnsub = onSnapshot(q, snap => {
+        if(window.chatUnsubAdmin) window.chatUnsubAdmin();
+        if(window.chatUnsubStudent) window.chatUnsubStudent();
+        
+        const handleChatChanges = (snap) => {
             snap.docChanges().forEach(change => {
                 const d = change.doc.data();
-                if(change.type === 'added' && d.status === 'pending' && currentVault.name !== "Retrospective") {
-                    if(confirm("ADMIN WANTS TO TALK WITH YOU. Accept secure live chat?")) {
+                const amIAdmin = d.admin_code === currentVault.code;
+                const amIStudent = d.student_code === currentVault.code;
+
+                // NEW PENDING REQUEST: Only the Student gets the Accept/Reject prompt
+                if (change.type === 'added' && d.status === 'pending' && amIStudent) {
+                    if (confirm("ADMIN WANTS TO TALK WITH YOU. Accept secure live chat?")) {
                         updateDoc(doc(db, "live_chats", change.doc.id), {status: 'active'});
+                    } else { 
+                        deleteDoc(doc(db, "live_chats", change.doc.id)); 
+                    }
+                }
+
+                // ACTIVE CHAT: Open the chat box for whoever is involved
+                if (d.status === 'active') {
+                    if (window.activeChatId !== change.doc.id) {
                         window.activeChatId = change.doc.id;
                         document.getElementById('liveChatBox').style.display = 'flex';
-                    } else { deleteDoc(doc(db, "live_chats", change.doc.id)); }
+                    }
+                    if (window.activeChatId === change.doc.id) {
+                        renderChatMessages(d.messages || []);
+                    }
                 }
-                if(change.type === 'modified' && d.status === 'active' && currentVault.name === "Retrospective") {
-                    window.activeChatId = change.doc.id;
-                    document.getElementById('liveChatBox').style.display = 'flex';
-                    renderChatMessages(d.messages || []);
-                }
-                if(change.type === 'modified' && d.status === 'active') {
-                    if(window.activeChatId === change.doc.id) renderChatMessages(d.messages || []);
-                }
-                if(change.type === 'removed') {
+
+                // CHAT CLOSED: Destroy the box
+                if (change.type === 'removed' && window.activeChatId === change.doc.id) {
                     document.getElementById('liveChatBox').style.display = 'none';
                     window.activeChatId = null;
+                    alert("The secure chat was closed.");
                 }
             });
-        });
+        };
+
+        // Listen for chats where I am the Admin OR I am the Student
+        const qAdmin = query(collection(db, "live_chats"), where("admin_code", "==", currentVault.code));
+        const qStudent = query(collection(db, "live_chats"), where("student_code", "==", currentVault.code));
+        
+        window.chatUnsubAdmin = onSnapshot(qAdmin, handleChatChanges);
+        window.chatUnsubStudent = onSnapshot(qStudent, handleChatChanges);
     }
 
     function renderChatMessages(msgs) {
         const area = document.getElementById('chatMsgArea'); area.innerHTML = "";
         msgs.forEach(m => {
-            let color = m.from === "Retrospective" ? "#ff4d4d" : "#00d2ff";
+            // Dynamic Coloring: Your messages are green, their messages are red
+            let color = m.from === currentVault.name ? "#0aff0a" : "#ff4d4d";
             area.innerHTML += `<div style="font-size:0.8rem; margin-bottom:5px;"><b style="color:${color};">${m.from}:</b> <span style="color:#fff;">${m.text}</span></div>`;
         });
         area.scrollTop = area.scrollHeight;
@@ -549,7 +563,7 @@
         document.getElementById('adminNoticeInput').value = ""; document.getElementById('adminNoticeImg').value = "";
     };
 
-    // --- FEED INBOX (20 MAX AUTO-CLEANUP) ---
+    // --- FEED INBOX ---
     function enableFeedSync() {
         if(feedSync) feedSync();
         feedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), (snap) => {
@@ -589,7 +603,7 @@
     };
     window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
 
-    // --- WANTED BOARD (20 MAX) ---
+    // --- WANTED BOARD ---
     window.openWantedBoard = () => {
         window.navigateTo('wantedPage');
         if(wantedSync) wantedSync();
@@ -794,7 +808,6 @@
         });
     }
 
-    // ZOOM SYSTEM
     window.openZoom = (id) => {
         window.currentZoomId = id;
         const img = document.getElementById(`img_${id}`);
@@ -812,10 +825,7 @@
         }
     };
 
-    window.closeZoom = () => {
-        document.getElementById('zoomModal').style.display = 'none';
-        window.currentZoomId = null;
-    };
+    window.closeZoom = () => { document.getElementById('zoomModal').style.display = 'none'; window.currentZoomId = null; };
 
     window.zoomFlip = (dir) => {
         if(!window.currentZoomId) return;
@@ -828,7 +838,6 @@
             img.dataset.idx = idx; 
             document.getElementById('zoomedImg').src = urls[idx];
             document.getElementById('zoomCounter').innerText = `PAGE ${idx + 1} OF ${urls.length}`;
-            
             const txt = document.getElementById(`txt_${id}`);
             if(txt) txt.innerText = `PAGE ${idx + 1} OF ${urls.length} (TAP TO JUMP)`;
         }
@@ -845,49 +854,18 @@
             img.src = urls[idx];
             img.dataset.idx = idx;
             txt.innerText = `PAGE ${idx + 1} OF ${urls.length} (TAP TO JUMP)`;
-        } else {
-            alert("Invalid page number.");
-        }
+        } else { alert("Invalid page number."); }
     };
 
-    // --- SYSTEM RADAR / ADMIN TOOLS ---
+    // --- ADMIN DASHBOARD ---
     window.loadAdminDashboard = async () => {
-        // Using real-time snapshot for live 15s updates without reloading page
-        if(window.vaultsSync) window.vaultsSync();
-        window.vaultsSync = onSnapshot(collection(db, "vaults"), snap => {
-            window.latestVaults = snap.docs.map(d => d.data());
-            renderRadar();
-        });
-
-        // Set local interval to re-evaluate the 15-second online rule constantly
-        if(radarInterval) clearInterval(radarInterval);
-        radarInterval = setInterval(renderRadar, 3000); 
-
-        if(adminFeedSync) adminFeedSync();
-        adminFeedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), snap => {
-            const mg = document.getElementById('adminFeedManageArea'); mg.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
-                let imgThumb = data.img ? `<br><img src="${data.img}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; margin-top:5px; border:1px solid #444;">` : "";
-                mg.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; border-radius:5px; align-items:center; font-size:0.8rem; border:1px solid #222;">
-                    <div style="flex:1; padding-right:10px;">${data.text} ${imgThumb}</div>
-                    <button onclick="window.delAdminFeed('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button></div>`;
-            });
-        });
-    };
-
-    function renderRadar() {
-        const list = document.getElementById('adminList');
-        if(!window.latestVaults || window.latestVaults.length === 0) { list.innerHTML = "Loading Radar..."; return; }
-        
+        const list = document.getElementById('adminList'); list.innerHTML = "Loading Radar...";
+        const snap = await getDocs(collection(db, "vaults"));
         list.innerHTML = "";
-        window.latestVaults.forEach(u => {
-            const diff = Date.now() - (u.last_active || 0);
-            const isOnline = diff <= 15000; // 15 SECOND STRICT RULE
-            
-            const radarStatus = isOnline 
-                ? `<span style="font-size:0.7rem; background:#111; padding:3px 8px; border-radius:5px; border:1px solid #0aff0a; color:#0aff0a; font-weight:bold;">🟢 ONLINE</span>` 
-                : `<span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${timeAgo(u.last_active)}</span>`;
+        snap.forEach(d => {
+            const u = d.data();
+            const isOnline = (Date.now() - (u.last_active || 0)) <= 15000; 
+            const radarStatus = isOnline ? `<span style="font-size:0.7rem; background:#111; padding:3px 8px; border-radius:5px; border:1px solid #0aff0a; color:#0aff0a; font-weight:bold;">🟢 ONLINE</span>` : `<span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${timeAgo(u.last_active)}</span>`;
             
             const chatBtn = (isOnline && u.code !== currentVault.code) ? `<button class="submit-btn" style="background:#0aff0a; color:#000; flex:1;" onclick="window.requestAdminChat('${u.code}')">TALK</button>` : '';
 
@@ -907,7 +885,19 @@
                 <div id="adminData_${u.code}" style="margin-top:10px; font-size:0.8rem; color:#aaa;"></div>
             </div>`;
         });
-    }
+
+        if(adminFeedSync) adminFeedSync();
+        adminFeedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), snap => {
+            const mg = document.getElementById('adminFeedManageArea'); mg.innerHTML = "";
+            snap.forEach(d => {
+                const data = d.data();
+                let imgThumb = data.img ? `<br><img src="${data.img}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; margin-top:5px; border:1px solid #444;">` : "";
+                mg.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; border-radius:5px; align-items:center; font-size:0.8rem; border:1px solid #222;">
+                    <div style="flex:1; padding-right:10px;">${data.text} ${imgThumb}</div>
+                    <button onclick="window.delAdminFeed('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button></div>`;
+            });
+        });
+    };
 
     window.requestAdminChat = async (studentCode) => {
         const chatId = currentVault.code + "_" + studentCode;
@@ -949,7 +939,7 @@
         const commPosts = await getDocs(query(collection(db, "community_posts"), where("author_code", "==", code)));
         commPosts.forEach(async cp => await deleteDoc(doc(db, "community_posts", cp.id)));
 
-        alert("User Wiped.");
+        alert("User Wiped."); window.loadAdminDashboard();
     };
 
     // --- GENERAL SYNC HELPERS ---
