@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Notes Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 
     <style>
         :root { --neon-blue: #00d2ff; --neon-purple: #9d50bb; --bg: #05070a; --glass: rgba(255, 255, 255, 0.05); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Poppins', sans-serif; background: var(--bg); background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #05070a 100%); color: #fff; }
-        #app-container { height: 100%; width: 100%; overflow-y: auto; overflow-x: hidden; }
+        #app-container { height: 100%; width: 100%; overflow-y: auto; overflow-x: hidden; position: relative;}
         .page { display: none; width: 100%; min-height: 100vh; padding: 20px; box-sizing: border-box; }
         .active { display: flex; flex-direction: column; align-items: center; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -34,15 +33,44 @@
         .comment-input-grp { display: flex; gap: 5px; margin-top: 10px; }
         .comment-input-grp input { margin: 0; padding: 10px; font-size: 0.8rem; }
         .comment-input-grp button { margin: 0; padding: 10px; width: auto; background: var(--neon-blue); color: black; font-weight: bold; }
+        
+        /* Floating Chat UI */
+        #liveChatBox { display: none; position: fixed; bottom: 20px; right: 20px; width: 90%; max-width: 350px; height: 400px; background: rgba(5,7,10,0.95); border: 2px solid #0aff0a; border-radius: 15px; z-index: 9999; flex-direction: column; padding: 15px; box-sizing: border-box; box-shadow: 0 0 20px rgba(10,255,10,0.3); backdrop-filter: blur(10px); }
+        #chatMsgArea { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; padding-right: 5px; }
+        
+        /* Fullscreen Zoom UI */
+        #zoomModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
     </style>
 </head>
 <body>
 
+<div id="liveChatBox">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:10px;">
+        <b style="color:#0aff0a; font-family:'Orbitron';">🟢 SECURE LIVE CHAT</b>
+        <button onclick="window.endChat()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; margin:0; width:auto;">CLOSE</button>
+    </div>
+    <div id="chatMsgArea"></div>
+    <div style="display:flex; gap:5px;">
+        <input type="text" id="liveChatInput" placeholder="Type a message..." style="margin:0; padding:10px; font-size:0.8rem;">
+        <button onclick="window.sendLiveChat()" style="margin:0; padding:10px; width:auto; background:#0aff0a; color:#000; font-weight:bold;">SEND</button>
+    </div>
+</div>
+
+<div id="zoomModal">
+    <button onclick="window.closeZoom()" style="position:absolute; top:20px; right:20px; background:rgba(255,0,0,0.8); color:white; border:1px solid red; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; z-index:10001;">CLOSE (X)</button>
+    <img id="zoomedImg" src="" style="max-width:100%; max-height:75vh; object-fit:contain; transition: transform 0.2s;">
+    <div id="zoomControls" style="position:absolute; bottom:40px; display:flex; gap:20px; z-index:10001; align-items:center;">
+        <button onclick="window.zoomFlip(-1)" style="background:var(--neon-blue); color:#000; border:none; padding:15px 25px; border-radius:10px; font-weight:bold; font-size:1.2rem; cursor:pointer; box-shadow:0 0 15px rgba(0,210,255,0.5);">◀</button>
+        <span id="zoomCounter" style="color:var(--neon-blue); font-weight:bold; font-family:'Orbitron'; padding:0 10px;"></span>
+        <button onclick="window.zoomFlip(1)" style="background:var(--neon-blue); color:#000; border:none; padding:15px 25px; border-radius:10px; font-weight:bold; font-size:1.2rem; cursor:pointer; box-shadow:0 0 15px rgba(0,210,255,0.5);">▶</button>
+    </div>
+</div>
+
 <div id="app-container">
 
     <div id="gatePage" class="page active">
-        <h1 style="margin-top: 20vh; font-size: 2rem; color: var(--neon-blue);">WHO ARE YOU?</h1>
-        <p style="color: #888; text-align: center; margin-bottom: 30px;">Identify yourself to enter.</p>
+        <h1 style="margin-top: 5vh; font-size: 2rem; color: var(--neon-blue);">WHO ARE YOU?</h1>
+        <p style="color: #888; text-align: center; margin-bottom: 20px;">Identify yourself to enter.</p>
         <div class="glass-box">
             <h2 style="margin-top:0; font-size:1rem; text-align:center;">LOGIN</h2>
             <input type="text" id="gCode" placeholder="3-Digit Code" maxlength="3">
@@ -51,6 +79,15 @@
             <p style="text-align:center; font-size:0.8rem; margin:10px 0;">OR</p>
             <button style="background:none; border:1px solid #444;" onclick="window.navigateTo('registerPage')">CREATE NEW ID</button>
         </div>
+        
+        <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:10px; width:100%; max-width:400px; font-size:0.75rem; color:#ccc; margin-bottom:20px; border:1px solid #222; line-height: 1.6;">
+            <b style="color:var(--neon-blue); font-size: 0.9rem;">HOW TO JOIN / कैसे जुड़ें:</b><br><br>
+            1. <b>"CREATE NEW ID"</b> par click karo.<br>
+            2. Apna poora naam likho (Enter Name).<br>
+            3. Koi bhi <b>3-digit ka secret code</b> socho aur dalo (jaise 123, 456). Yehi tumhara ID banega.<br>
+            4. Ek strong <b>password</b> set karo.<br>
+            5. Wapas aao, Login karo, aur class ke saare notes dekho!
+        </div>
         <p style="font-size: 0.7rem; color: #444; text-align:center;">System Secure | Encrypted</p>
     </div>
 
@@ -58,8 +95,8 @@
         <div class="back-btn" onclick="window.navigateTo('gatePage')">← BACK</div>
         <div class="glass-box">
             <h1>NEW ID</h1>
-            <input type="text" id="rName" placeholder="Full Name">
-            <input type="text" id="rCode" placeholder="Pick 3-Digit Code" maxlength="3">
+            <input type="text" id="rName" placeholder="Full Name (Poora Naam)">
+            <input type="text" id="rCode" placeholder="Pick 3-Digit Code (e.g. 123)" maxlength="3">
             <input type="password" id="rPass" placeholder="Set Password">
             <button class="submit-btn" onclick="window.registerUser()">REGISTER & ENTER</button>
         </div>
@@ -83,13 +120,29 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:12px; width: 100%; max-width: 400px;">
+            <div class="item-btn" style="background: rgba(0, 210, 255, 0.1); border-color: var(--neon-blue); color: var(--neon-blue);" onclick="window.openCommunity()">🌐 COMMUNITY HUB</div>
+            
             <div style="display:flex; gap:12px;">
                 <div class="item-btn" style="flex: 1;" onclick="window.startVaultFlow()">POST</div>
                 <div class="item-btn" style="flex: 1;" onclick="window.navigateTo('subjectPage')">SEE</div>
             </div>
+            
             <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.openWantedBoard()">🎯 WANTED BOARD</div>
         </div>
         <p style="color:#333; font-size:0.7rem; margin-top:30px; letter-spacing:1px;">POWERED BY RETROSPECTIVE</p>
+    </div>
+
+    <div id="communityPage" class="page">
+        <div class="back-btn" onclick="window.navigateTo('homePage')">← BACK</div>
+        <h1 style="color: var(--neon-blue);">COMMUNITY</h1>
+        <p style="text-align:center; font-size:0.8rem; color:#888; margin-top:-10px;">Discuss, ask doubts, and connect.</p>
+        
+        <div class="glass-box" style="border-color: var(--neon-blue); padding:15px;">
+            <textarea id="communityInput" placeholder="What's on your mind?..." style="height:60px; resize:none; margin-bottom:10px;"></textarea>
+            <button class="submit-btn" style="width:100%;" onclick="window.postToCommunity()">POST TO COMMUNITY</button>
+        </div>
+        
+        <div id="communityList" style="width: 100%; max-width: 400px;"></div>
     </div>
 
     <div id="wantedPage" class="page">
@@ -155,9 +208,8 @@
         
         <div class="glass-box" style="border-color: #ffaa00; background:rgba(255,170,0,0.05);">
             <h2 style="font-size: 1rem; color: #ffaa00; margin-top:0;">SYSTEM SECURITY</h2>
-            <p style="font-size:0.8rem; color:#aaa; margin:0 0 10px 0;">Change the Authorization Code required to post notes.</p>
             <div style="display:flex; gap:5px;">
-                <input type="text" id="adminNewPosterCode" placeholder="Current: Syncing..." style="margin:0;">
+                <input type="text" id="adminNewPosterCode" placeholder="Current Poster Code: Syncing..." style="margin:0;">
                 <button class="submit-btn" style="background: #ffaa00; color:#000; width:auto;" onclick="window.updatePosterCode()">SET</button>
             </div>
         </div>
@@ -178,11 +230,16 @@
                 <input type="file" id="adminFeedImg" accept="image/*" style="margin:0;">
                 <button class="submit-btn" id="adminFeedBtn" style="width:auto; padding:0 20px;" onclick="window.postAdminFeed()">SEND</button>
             </div>
-            <div id="adminFeedManageArea" style="margin-top:15px; display:flex; flex-direction:column; gap:5px;">
-                </div>
+            <div id="adminFeedManageArea" style="margin-top:15px; display:flex; flex-direction:column; gap:5px;"></div>
         </div>
 
-        <h2 style="color:#ff4d4d; text-align:center;">SYSTEM RADAR (DATABASE)</h2>
+        <div class="glass-box" style="border-color: #0aff0a; background:rgba(10,255,10,0.05);">
+            <h2 style="font-size: 1rem; color: #0aff0a; margin-top:0;">COMMUNITY MANAGEMENT</h2>
+            <p style="font-size:0.8rem; color:#aaa; margin:0 0 10px 0;">Wipe all posts in the public community chat.</p>
+            <button class="submit-btn" style="background: #0aff0a; color:#000;" onclick="window.clearCommunityHub()">NUKE COMMUNITY HUB</button>
+        </div>
+
+        <h2 style="color:#ff4d4d; text-align:center;">SYSTEM RADAR</h2>
         <div id="adminList" style="width: 100%; max-width: 600px; display:flex; flex-direction:column; gap:15px;"></div>
     </div>
 
@@ -203,19 +260,21 @@
     };
 
     let app, db;
-    try { app = initializeApp(firebaseConfig); db = getFirestore(app); } 
-    catch(e) { alert("Connection Error"); }
+    try { app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e) { alert("Connection Error"); }
 
     const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
     let currentVault = null;
-    let liveSync, messageSync, wantedSync, feedSync, adminFeedSync;
+    let liveSync, messageSync, wantedSync, feedSync, adminFeedSync, chatUnsub, communitySync, radarInterval;
     let selSub, selChap;
     let activeCommentListeners = [];
     window.loadedAlbums = {}; 
     window.currentEditId = null;
+    window.activeChatId = null;
+    window.currentZoomId = null;
+    window.latestVaults = [];
 
     // --- SYSTEM SECRETS ---
     window.systemPosterCode = "@777"; 
@@ -232,13 +291,31 @@
         if(!nc) return;
         await setDoc(doc(db, "system", "config"), { poster_code: nc }, { merge: true });
         document.getElementById('adminNewPosterCode').value = "";
-        alert("SYSTEM SECURITY UPDATED. New poster code is active.");
+        alert("SYSTEM SECURITY UPDATED.");
     };
 
-    // --- HARDWARE BACK BUTTON ---
+    // --- TIME AGO (SMOOTH DISPLAY) ---
+    function timeAgo(ms) {
+        if(!ms) return "Never";
+        const diff = Date.now() - ms;
+        if(diff < 60000) return "<1m ago"; 
+        const mins = Math.floor(diff / 60000);
+        if(mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if(hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs/24)}d ago`;
+    }
+
+    // --- TRACKING & NAVIGATION ---
+    window.updatePresence = () => {
+        if(currentVault) { updateDoc(doc(db, "vaults", currentVault.code), { last_active: Date.now() }).catch(e=>{}); }
+    };
+    setInterval(window.updatePresence, 10000); // Ping server every 10 seconds
+
     window.showPage = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
+        window.updatePresence();
         if(id !== 'galleryPage') {
             activeCommentListeners.forEach(unsub => unsub());
             activeCommentListeners = [];
@@ -251,18 +328,6 @@
     });
     history.replaceState({page: 'gatePage'}, "", "#gatePage");
 
-    // --- UTILITY: TIME AGO FORMATTER ---
-    function timeAgo(ms) {
-        if(!ms) return "Never";
-        const diff = Date.now() - ms;
-        const mins = Math.floor(diff / 60000);
-        if(mins < 1) return "Just now";
-        if(mins < 60) return `${mins}m ago`;
-        const hrs = Math.floor(mins / 60);
-        if(hrs < 24) return `${hrs}h ago`;
-        return `${Math.floor(hrs/24)}d ago`;
-    }
-
     // --- GATEWAY LOGIN ---
     window.gateLogin = async () => {
         const code = document.getElementById('gCode').value;
@@ -273,6 +338,7 @@
             const snap = await getDoc(doc(db, "vaults", code));
             if(snap.exists() && snap.data().pass === pass) {
                 currentVault = snap.data();
+                if(currentVault.code === "777") currentVault.name = "Retrospective";
                 
                 await updateDoc(doc(db, "vaults", code), { last_active: Date.now() });
 
@@ -282,6 +348,7 @@
                 enableMessageSync(currentVault.code);
                 enableGlobalSync(currentVault.code);
                 enableFeedSync();
+                startLiveChatListener();
                 window.navigateTo('homePage');
             } else { alert("Incorrect Code or Password"); }
         } catch(e) { alert("Network Error"); }
@@ -300,7 +367,7 @@
         } else { alert("Invalid"); }
     };
 
-    // --- SECOND LOCK (POST/ADMIN) ---
+    // --- SECOND LOCK ---
     window.startVaultFlow = () => {
         const auth = prompt("ENTER AUTHORIZATION CODE:");
         if(auth === "@Retrospective2026") {
@@ -313,22 +380,161 @@
         }
     };
 
-    // --- GLOBAL BROADCAST ---
+    // --- COMMUNITY HUB (REPLIES & 20 LIMIT) ---
+    window.openCommunity = () => {
+        window.navigateTo('communityPage');
+        if(communitySync) communitySync();
+        communitySync = onSnapshot(query(collection(db, "community_posts"), orderBy("timestamp", "desc")), (snap) => {
+            const list = document.getElementById('communityList');
+            list.innerHTML = "";
+            if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#888;'>No posts yet. Start the discussion!</p>"; return; }
+            
+            snap.forEach(d => {
+                const p = d.data();
+                
+                // Reply Logic
+                let repliesHtml = "";
+                if(p.replies && p.replies.length > 0) {
+                    p.replies.forEach(r => {
+                        repliesHtml += `<div style="margin-left:10px; border-left:2px solid #444; padding-left:10px; margin-top:8px; font-size:0.8rem; color:#bbb;">
+                            <b style="color:var(--neon-purple);">${r.author}:</b> ${r.text}
+                        </div>`;
+                    });
+                }
+
+                let replyBtn = `<button onclick="window.replyCommunityPost('${d.id}', '${p.author}')" style="background:transparent; color:var(--neon-blue); border:none; cursor:pointer; font-size:0.75rem; padding:0; text-decoration:underline; margin-right:15px;">Reply</button>`;
+                
+                let delBtn = "";
+                if(currentVault.name === "Retrospective" || currentVault.code === p.author_code) {
+                    delBtn = `<button onclick="window.delCommunityPost('${d.id}')" style="background:transparent; color:#ff4d4d; border:none; cursor:pointer; font-size:0.75rem; padding:0; text-decoration:underline;">Delete</button>`;
+                }
+                
+                list.innerHTML += `
+                <div class="glass-box" style="padding:15px; margin-bottom:15px; border-color:rgba(0, 210, 255, 0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; margin-bottom:10px;">
+                        <strong style="color:var(--neon-blue); font-size:0.9rem;">${p.author}</strong>
+                        <span style="font-size:0.7rem; color:#888;">${timeAgo(p.timestamp)}</span>
+                    </div>
+                    <div style="font-size:0.9rem; color:#ddd; margin-bottom:10px; line-height:1.4;">${p.text}</div>
+                    ${repliesHtml}
+                    <div style="display:flex; justify-content:flex-end; margin-top:10px; border-top:1px solid #222; padding-top:10px;">
+                        ${replyBtn}
+                        ${delBtn}
+                    </div>
+                </div>`;
+            });
+        });
+    };
+
+    window.postToCommunity = async () => {
+        const t = document.getElementById('communityInput').value.trim();
+        if(!t) return;
+        document.getElementById('communityInput').value = ""; 
+        
+        await addDoc(collection(db, "community_posts"), {
+            author: currentVault.name, author_code: currentVault.code, text: t, timestamp: Date.now(), replies: []
+        });
+
+        const snap = await getDocs(query(collection(db, "community_posts"), orderBy("timestamp", "desc")));
+        if(snap.docs.length > 20) {
+            const overflow = snap.docs.slice(20);
+            overflow.forEach(async (d) => await deleteDoc(doc(db, "community_posts", d.id)));
+        }
+    };
+
+    window.replyCommunityPost = async (id, author) => {
+        const txt = prompt(`Reply to ${author}:`);
+        if(!txt) return;
+        const ref = doc(db, "community_posts", id);
+        const snap = await getDoc(ref);
+        if(snap.exists()) {
+            let reps = snap.data().replies || [];
+            reps.push({ author: currentVault.name, text: txt, timestamp: Date.now() });
+            await updateDoc(ref, { replies: reps });
+        }
+    };
+
+    window.delCommunityPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "community_posts", id)); };
+
+    window.clearCommunityHub = async () => {
+        if(prompt("TYPE 'WIPE' TO DESTROY ALL COMMUNITY POSTS:") !== "WIPE") return;
+        const snap = await getDocs(collection(db, "community_posts"));
+        snap.forEach(async d => await deleteDoc(doc(db, "community_posts", d.id)));
+        alert("Community Hub has been completely wiped.");
+    };
+
+    // --- LIVE CHAT SYSTEM ---
+    function startLiveChatListener() {
+        if(!currentVault) return;
+        const field = currentVault.name === "Retrospective" ? "admin_code" : "student_code";
+        const q = query(collection(db, "live_chats"), where(field, "==", currentVault.code));
+        
+        if(chatUnsub) chatUnsub();
+        chatUnsub = onSnapshot(q, snap => {
+            snap.docChanges().forEach(change => {
+                const d = change.doc.data();
+                if(change.type === 'added' && d.status === 'pending' && currentVault.name !== "Retrospective") {
+                    if(confirm("ADMIN WANTS TO TALK WITH YOU. Accept secure live chat?")) {
+                        updateDoc(doc(db, "live_chats", change.doc.id), {status: 'active'});
+                        window.activeChatId = change.doc.id;
+                        document.getElementById('liveChatBox').style.display = 'flex';
+                    } else { deleteDoc(doc(db, "live_chats", change.doc.id)); }
+                }
+                if(change.type === 'modified' && d.status === 'active' && currentVault.name === "Retrospective") {
+                    window.activeChatId = change.doc.id;
+                    document.getElementById('liveChatBox').style.display = 'flex';
+                    renderChatMessages(d.messages || []);
+                }
+                if(change.type === 'modified' && d.status === 'active') {
+                    if(window.activeChatId === change.doc.id) renderChatMessages(d.messages || []);
+                }
+                if(change.type === 'removed') {
+                    document.getElementById('liveChatBox').style.display = 'none';
+                    window.activeChatId = null;
+                }
+            });
+        });
+    }
+
+    function renderChatMessages(msgs) {
+        const area = document.getElementById('chatMsgArea'); area.innerHTML = "";
+        msgs.forEach(m => {
+            let color = m.from === "Retrospective" ? "#ff4d4d" : "#00d2ff";
+            area.innerHTML += `<div style="font-size:0.8rem; margin-bottom:5px;"><b style="color:${color};">${m.from}:</b> <span style="color:#fff;">${m.text}</span></div>`;
+        });
+        area.scrollTop = area.scrollHeight;
+    }
+
+    window.sendLiveChat = async () => {
+        let txt = document.getElementById('liveChatInput').value.trim();
+        if(!txt || !window.activeChatId) return;
+        const ref = doc(db, "live_chats", window.activeChatId);
+        const snap = await getDoc(ref);
+        if(snap.exists()) {
+            let msgs = snap.data().messages || [];
+            msgs.push({from: currentVault.name, text: txt});
+            await updateDoc(ref, {messages: msgs});
+            document.getElementById('liveChatInput').value = "";
+        }
+    };
+    window.endChat = async () => {
+        if(window.activeChatId) await deleteDoc(doc(db, "live_chats", window.activeChatId));
+        document.getElementById('liveChatBox').style.display = 'none'; window.activeChatId = null;
+    };
+
+    // --- BROADCAST ---
     onSnapshot(doc(db, "system", "notice"), (docSnap) => {
         if(docSnap.exists()) {
             const data = docSnap.data();
             document.getElementById('noticeText').innerText = data.text || "";
             const imgEl = document.getElementById('noticeImg');
-            if(data.img) { imgEl.src = data.img; imgEl.style.display = "block"; }
-            else { imgEl.style.display = "none"; }
+            if(data.img) { imgEl.src = data.img; imgEl.style.display = "block"; } else { imgEl.style.display = "none"; }
         }
     });
-
     window.updateNotice = async () => {
         const txt = document.getElementById('adminNoticeInput').value;
         const file = document.getElementById('adminNoticeImg').files[0];
         if(!txt && !file) return;
-
         const btn = document.getElementById('adminNoticeBtn');
         btn.innerText = "Broadcasting..."; btn.disabled = true;
 
@@ -338,28 +544,21 @@
             const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
             const j = await res.json(); imgUrl = j.data.url;
         }
-
         await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
-        alert("Broadcasted to Hub!");
-        btn.innerText = "BROADCAST"; btn.disabled = false;
-        document.getElementById('adminNoticeInput').value = "";
-        document.getElementById('adminNoticeImg').value = "";
+        alert("Broadcasted!"); btn.innerText = "BROADCAST"; btn.disabled = false;
+        document.getElementById('adminNoticeInput').value = ""; document.getElementById('adminNoticeImg').value = "";
     };
 
-    // --- FEED (SYSTEM INBOX WITH IMAGES) ---
+    // --- FEED INBOX (20 MAX AUTO-CLEANUP) ---
     function enableFeedSync() {
         if(feedSync) feedSync();
         feedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), (snap) => {
-            const area = document.getElementById('adminFeedArea');
-            area.innerHTML = "";
+            const area = document.getElementById('adminFeedArea'); area.innerHTML = "";
             if(snap.empty) { area.innerHTML = "<i style='color:#666;'>No recent messages...</i>"; return; }
             snap.forEach(d => {
                 const data = d.data();
                 let imgHtml = data.img ? `<img src="${data.img}" style="width:100%; border-radius:8px; margin-top:8px; border:1px solid #333;">` : "";
-                area.innerHTML += `<div style="padding-bottom:15px; border-bottom:1px solid #222; margin-bottom:12px;">
-                    <div>${data.text}</div>
-                    ${imgHtml}
-                </div>`;
+                area.innerHTML += `<div style="padding-bottom:15px; border-bottom:1px solid #222; margin-bottom:12px;"><div>${data.text}</div>${imgHtml}</div>`;
             });
         });
     }
@@ -368,7 +567,6 @@
         const t = document.getElementById('adminFeedInput').value.trim();
         const file = document.getElementById('adminFeedImg').files[0];
         if(!t && !file) return;
-
         const btn = document.getElementById('adminFeedBtn');
         btn.innerText = "SENDING..."; btn.disabled = true;
 
@@ -378,21 +576,24 @@
             const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
             const j = await res.json(); imgUrl = j.data.url;
         }
-
         await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
-        
-        document.getElementById('adminFeedInput').value = "";
-        document.getElementById('adminFeedImg').value = "";
+
+        const snap = await getDocs(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")));
+        if(snap.docs.length > 20) {
+            const overflow = snap.docs.slice(20);
+            overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
+        }
+
+        document.getElementById('adminFeedInput').value = ""; document.getElementById('adminFeedImg').value = "";
         btn.innerText = "SEND"; btn.disabled = false;
     };
-
     window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
 
-    // --- WANTED BOARD ---
+    // --- WANTED BOARD (20 MAX) ---
     window.openWantedBoard = () => {
         window.navigateTo('wantedPage');
         if(wantedSync) wantedSync();
-        wantedSync = onSnapshot(collection(db, "wanted"), (snap) => {
+        wantedSync = onSnapshot(query(collection(db, "wanted"), orderBy("timestamp", "desc")), (snap) => {
             const list = document.getElementById('wantedList'); list.innerHTML = "";
             snap.forEach(d => {
                 const r = d.data();
@@ -403,11 +604,19 @@
     };
     window.postWantedRequest = async () => {
         const t = document.getElementById('reqInput').value;
-        if(t) { await addDoc(collection(db, "wanted"), { author: currentVault.name, text: t }); document.getElementById('reqInput').value = ""; }
+        if(t) { 
+            await addDoc(collection(db, "wanted"), { author: currentVault.name, text: t, timestamp: Date.now() }); 
+            document.getElementById('reqInput').value = ""; 
+            const snap = await getDocs(query(collection(db, "wanted"), orderBy("timestamp", "desc")));
+            if(snap.docs.length > 20) {
+                const overflow = snap.docs.slice(20);
+                overflow.forEach(async (d) => await deleteDoc(doc(db, "wanted", d.id)));
+            }
+        }
     };
     window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
 
-    // --- FOLDER UPLOAD SYSTEM ---
+    // --- FOLDER UPLOAD ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
         const chap = document.getElementById('pChap').value.trim();
@@ -452,9 +661,12 @@
             const mergedUrls = [...existingUrls, ...newUrls];
             await updateDoc(doc(db, "all_notes", existingDocId), { urls: mergedUrls });
         } else {
+            let dName = currentVault.name;
+            if(currentVault.code === window.systemPosterCode) dName = "Retro Hope"; 
+            
             await addDoc(collection(db, "all_notes"), {
                 author: currentVault.name, vault_code: currentVault.code,
-                display_author: currentVault.name, 
+                display_author: dName, 
                 subject: sub, chapter: chap, urls: newUrls
             });
         }
@@ -465,7 +677,7 @@
         document.getElementById('imgInp').value = "";
     };
 
-    // --- FOLDER EDITING SYSTEM ---
+    // --- FOLDER EDITING ---
     window.editFolder = async (id) => {
         window.currentEditId = id;
         window.navigateTo('editFolderPage');
@@ -509,7 +721,7 @@
         }
     };
 
-    // --- VIEWER ---
+    // --- VIEWER & ZOOM SYSTEM ---
     const subs = ["History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
@@ -556,16 +768,20 @@
             const data = d.data();
             window.loadedAlbums[d.id] = data.urls;
             
+            let controls = '';
+            if(data.urls.length > 1) {
+                controls = `
+                <div style="display:flex; justify-content:center; background:#111; padding:8px; border-radius:8px; border:1px solid #333; margin-top:5px;">
+                    <button id="txt_${d.id}" style="background:transparent; border:none; color:var(--neon-blue); font-size:0.85rem; font-weight:bold; cursor:pointer; width:100%;" onclick="window.jumpPage('${d.id}')">PAGE 1 OF ${data.urls.length} (TAP TO JUMP)</button>
+                </div>`;
+            }
+
             area.innerHTML += `
             <div class="note-card">
                 <img id="img_${d.id}" src="${data.urls[0]}" data-idx="0">
+                <button style="width:100%; background:rgba(255,255,255,0.1); color:#fff; border:1px solid var(--neon-blue); padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.openZoom('${d.id}')">🔍 ZOOM / READ FULLSCREEN</button>
                 
-                ${data.urls.length > 1 ? `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:5px 10px; border-radius:8px; border:1px solid #333;">
-                    <button style="background:transparent; border:none; color:white; font-weight:bold; cursor:pointer;" onclick="window.flip('${d.id}', -1)">◀ PREV</button>
-                    <span id="txt_${d.id}" style="font-size:0.8rem; color:#888;">Page 1 of ${data.urls.length}</span>
-                    <button style="background:transparent; border:none; color:white; font-weight:bold; cursor:pointer;" onclick="window.flip('${d.id}', 1)">NEXT ▶</button>
-                </div>` : ''}
+                ${controls}
 
                 <div style="display:flex; justify-content:flex-end; margin-top:10px;">
                     <button style="background:transparent; border:none; color:#ff4d4d; font-size:0.7rem; text-decoration:underline; cursor:pointer;" onclick="window.flagNote('${code}', '${selSub}', '${selChap}')">Report Issue</button>
@@ -578,34 +794,112 @@
         });
     }
 
-    window.flip = (id, dir) => {
+    // ZOOM SYSTEM
+    window.openZoom = (id) => {
+        window.currentZoomId = id;
         const img = document.getElementById(`img_${id}`);
-        const txt = document.getElementById(`txt_${id}`);
+        const idx = parseInt(img.dataset.idx);
+        const urls = window.loadedAlbums[id];
+        
+        document.getElementById('zoomModal').style.display = 'flex';
+        document.getElementById('zoomedImg').src = urls[idx];
+        
+        if(urls.length > 1) {
+            document.getElementById('zoomControls').style.display = 'flex';
+            document.getElementById('zoomCounter').innerText = `PAGE ${idx + 1} OF ${urls.length}`;
+        } else {
+            document.getElementById('zoomControls').style.display = 'none';
+        }
+    };
+
+    window.closeZoom = () => {
+        document.getElementById('zoomModal').style.display = 'none';
+        window.currentZoomId = null;
+    };
+
+    window.zoomFlip = (dir) => {
+        if(!window.currentZoomId) return;
+        const id = window.currentZoomId;
+        const img = document.getElementById(`img_${id}`);
         const urls = window.loadedAlbums[id];
         let idx = parseInt(img.dataset.idx) + dir;
         if(idx >= 0 && idx < urls.length) { 
-            img.src = urls[idx]; img.dataset.idx = idx; 
-            if(txt) txt.innerText = `Page ${idx + 1} of ${urls.length}`;
+            img.src = urls[idx]; 
+            img.dataset.idx = idx; 
+            document.getElementById('zoomedImg').src = urls[idx];
+            document.getElementById('zoomCounter').innerText = `PAGE ${idx + 1} OF ${urls.length}`;
+            
+            const txt = document.getElementById(`txt_${id}`);
+            if(txt) txt.innerText = `PAGE ${idx + 1} OF ${urls.length} (TAP TO JUMP)`;
+        }
+    };
+
+    window.jumpPage = (id) => {
+        const urls = window.loadedAlbums[id];
+        let p = prompt(`Enter page number (1 to ${urls.length}):`);
+        if(!p) return;
+        let idx = parseInt(p) - 1;
+        if(idx >= 0 && idx < urls.length) {
+            const img = document.getElementById(`img_${id}`);
+            const txt = document.getElementById(`txt_${id}`);
+            img.src = urls[idx];
+            img.dataset.idx = idx;
+            txt.innerText = `PAGE ${idx + 1} OF ${urls.length} (TAP TO JUMP)`;
+        } else {
+            alert("Invalid page number.");
         }
     };
 
     // --- SYSTEM RADAR / ADMIN TOOLS ---
     window.loadAdminDashboard = async () => {
-        const list = document.getElementById('adminList'); list.innerHTML = "Loading Radar...";
-        const snap = await getDocs(collection(db, "vaults"));
+        // Using real-time snapshot for live 15s updates without reloading page
+        if(window.vaultsSync) window.vaultsSync();
+        window.vaultsSync = onSnapshot(collection(db, "vaults"), snap => {
+            window.latestVaults = snap.docs.map(d => d.data());
+            renderRadar();
+        });
+
+        // Set local interval to re-evaluate the 15-second online rule constantly
+        if(radarInterval) clearInterval(radarInterval);
+        radarInterval = setInterval(renderRadar, 3000); 
+
+        if(adminFeedSync) adminFeedSync();
+        adminFeedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), snap => {
+            const mg = document.getElementById('adminFeedManageArea'); mg.innerHTML = "";
+            snap.forEach(d => {
+                const data = d.data();
+                let imgThumb = data.img ? `<br><img src="${data.img}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; margin-top:5px; border:1px solid #444;">` : "";
+                mg.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; border-radius:5px; align-items:center; font-size:0.8rem; border:1px solid #222;">
+                    <div style="flex:1; padding-right:10px;">${data.text} ${imgThumb}</div>
+                    <button onclick="window.delAdminFeed('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button></div>`;
+            });
+        });
+    };
+
+    function renderRadar() {
+        const list = document.getElementById('adminList');
+        if(!window.latestVaults || window.latestVaults.length === 0) { list.innerHTML = "Loading Radar..."; return; }
+        
         list.innerHTML = "";
-        snap.forEach(d => {
-            const u = d.data();
-            const lastActive = u.last_active ? timeAgo(u.last_active) : "Unknown";
+        window.latestVaults.forEach(u => {
+            const diff = Date.now() - (u.last_active || 0);
+            const isOnline = diff <= 15000; // 15 SECOND STRICT RULE
+            
+            const radarStatus = isOnline 
+                ? `<span style="font-size:0.7rem; background:#111; padding:3px 8px; border-radius:5px; border:1px solid #0aff0a; color:#0aff0a; font-weight:bold;">🟢 ONLINE</span>` 
+                : `<span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${timeAgo(u.last_active)}</span>`;
+            
+            const chatBtn = (isOnline && u.code !== currentVault.code) ? `<button class="submit-btn" style="background:#0aff0a; color:#000; flex:1;" onclick="window.requestAdminChat('${u.code}')">TALK</button>` : '';
 
             list.innerHTML += `
             <div class="glass-box" style="border-color:#ff4d4d; padding:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h3 style="margin:0; color:#ff4d4d;">${u.name}</h3>
-                    <span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${lastActive}</span>
+                    ${radarStatus}
                 </div>
                 <p style="margin:10px 0;">ID: <b>${u.code}</b> | Pass: <span style="color:#ffaa00">${u.pass}</span></p>
                 <div style="display:flex; gap:5px;">
+                    ${chatBtn}
                     <button class="submit-btn" style="background:#444; flex:1;" onclick="window.adminViewPosts('${u.code}')">POSTS</button>
                     <button class="submit-btn" style="background:#222; border:1px solid #555; flex:1;" onclick="window.adminSpyInbox('${u.code}')">SPY</button>
                     <button class="submit-btn" style="background:#ff4d4d; flex:1;" onclick="window.forcePurge('${u.code}', '${u.name}')">NUKE</button>
@@ -613,22 +907,14 @@
                 <div id="adminData_${u.code}" style="margin-top:10px; font-size:0.8rem; color:#aaa;"></div>
             </div>`;
         });
+    }
 
-        // Load Feed management
-        if(adminFeedSync) adminFeedSync();
-        adminFeedSync = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), snap => {
-            const mg = document.getElementById('adminFeedManageArea');
-            mg.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
-                let imgThumb = data.img ? `<br><img src="${data.img}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; margin-top:5px; border:1px solid #444;">` : "";
-                
-                mg.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; border-radius:5px; align-items:center; font-size:0.8rem; border:1px solid #222;">
-                    <div style="flex:1; padding-right:10px;">${data.text} ${imgThumb}</div>
-                    <button onclick="window.delAdminFeed('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button>
-                </div>`;
-            });
+    window.requestAdminChat = async (studentCode) => {
+        const chatId = currentVault.code + "_" + studentCode;
+        await setDoc(doc(db, "live_chats", chatId), {
+            admin_code: currentVault.code, student_code: studentCode, status: 'pending', messages: []
         });
+        alert("Talk request sent. Waiting for student to accept...");
     };
 
     window.adminViewPosts = async (code) => {
@@ -659,7 +945,11 @@
         reqs.forEach(async r => await deleteDoc(doc(db, "wanted", r.id)));
         const myComms = await getDocs(query(collection(db, "comments"), where("author", "==", name)));
         myComms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
-        alert("User Wiped."); window.loadAdminDashboard();
+        
+        const commPosts = await getDocs(query(collection(db, "community_posts"), where("author_code", "==", code)));
+        commPosts.forEach(async cp => await deleteDoc(doc(db, "community_posts", cp.id)));
+
+        alert("User Wiped.");
     };
 
     // --- GENERAL SYNC HELPERS ---
