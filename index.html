@@ -195,6 +195,7 @@
         <div class="glass-box">
             <h2 style="font-size: 1rem; color: #fff; margin-top:0;">UPLOAD NOTES</h2>
             <select id="pSub">
+                <option>BOOKS</option>
                 <option>History</option><option>Geography</option><option>Civics</option>
                 <option>Economics</option><option>INFORMATION TECHNOLOGY</option>
                 <option>PHYSICS</option><option>CHEMISTRY</option><option>BIOLOGY</option>
@@ -377,6 +378,7 @@
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         
+        // --- ACTIVITY TELEMETRY MAPPING ---
         let newAct = window.currentActivity;
         if(id === 'homePage') newAct = "Home Page";
         else if(id === 'communityPage') newAct = "Community Hub";
@@ -436,7 +438,6 @@
                 enableFeedSync();
                 startLiveChatListener();
                 
-                // Fetch community count to ensure listener starts, but navigate handles the rest
                 if(communitySync) communitySync();
                 
                 window.navigateTo('homePage');
@@ -983,10 +984,18 @@
         }
     };
 
-    // --- VIEWER ---
-    const subs = ["History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
+    // --- VIEWER & ZOOM SYSTEM ---
+    const subs = ["BOOKS", "History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
     subs.forEach(s => {
-        const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
+        const b = document.createElement('div'); b.className = 'item-btn'; 
+        b.innerText = s === "BOOKS" ? "📖 BOOKS" : s; 
+        
+        if (s === "BOOKS") {
+            b.style.borderColor = "#ffaa00";
+            b.style.color = "#ffaa00";
+            b.style.background = "rgba(255, 170, 0, 0.1)";
+        }
+        
         b.onclick = () => loadChapters(s); document.getElementById('subGrid').appendChild(b);
     });
 
@@ -1000,17 +1009,24 @@
         snap.forEach(d => { if(d.data().chapter) chaps.add(d.data().chapter); });
         
         const g = document.getElementById('chapGrid'); g.innerHTML = "";
-        if(chaps.size === 0) { g.innerHTML = "<p style='color:#888; text-align:center;'>No chapters found.</p>"; return; }
+        if(chaps.size === 0) { g.innerHTML = "<p style='color:#888; text-align:center;'>No folders found.</p>"; return; }
 
         chaps.forEach(c => {
             const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
+            
+            if (selSub === "BOOKS") {
+                b.style.borderColor = "#ffaa00";
+                b.style.color = "#ffaa00";
+                b.style.background = "rgba(255, 170, 0, 0.1)";
+            }
+            
             b.onclick = () => loadPosters(c); g.appendChild(b);
         });
     }
 
     async function loadPosters(c) {
         selChap = c; 
-        window.setActivity(`Viewing Chapter: ${c}`);
+        window.setActivity(`Viewing: ${c}`);
         window.navigateTo('posterListPage');
         
         const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
@@ -1025,12 +1041,19 @@
         const g = document.getElementById('posterGrid'); g.innerHTML = "";
         users.forEach((n, code) => {
             const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "Folder by " + n;
+            
+            if (selSub === "BOOKS") {
+                b.style.borderColor = "#ffaa00";
+                b.style.color = "#ffaa00";
+                b.style.background = "rgba(255, 170, 0, 0.1)";
+            }
+            
             b.onclick = () => loadGallery(n, code); g.appendChild(b);
         });
     }
 
     async function loadGallery(name, code) {
-        window.setActivity(`Reading Notes: ${selChap}`);
+        window.setActivity(`Reading: ${selChap}`);
         window.navigateTo('galleryPage');
         const area = document.getElementById('notesArea'); 
         area.innerHTML = "Opening...";
@@ -1038,15 +1061,18 @@
         try {
             const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code), where("chapter", "==", selChap)));
             
-            document.getElementById('galleryTitle').innerText = "NOTES";
-            document.getElementById('galleryTitle').style.color = "var(--neon-blue)";
+            const headerColor = selSub === "BOOKS" ? "#ffaa00" : "var(--neon-blue)";
+            const headerIcon = selSub === "BOOKS" ? "📖" : "📚";
+            
+            document.getElementById('galleryTitle').innerText = selSub === "BOOKS" ? "LIBRARY" : "NOTES";
+            document.getElementById('galleryTitle').style.color = headerColor;
             
             area.innerHTML = `
-                <h2 style="margin-bottom:5px; text-align:center; color:var(--neon-blue);">📚 ${selSub}: ${selChap}</h2>
+                <h2 style="margin-bottom:5px; text-align:center; color:${headerColor};">${headerIcon} ${selSub}: ${selChap}</h2>
                 <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:20px;">
                     <span style="color:#888; font-size:0.9rem;">By ${name}</span>
                     <span style="color:#333;">|</span>
-                    <button onclick="window.sendMsg('${code}', '${name}')" style="background:transparent; color:var(--neon-blue); font-size:0.75rem; padding:0; border:none; text-decoration:underline; font-weight:bold; cursor:pointer;">Message Uploader</button>
+                    <button onclick="window.sendMsg('${code}', '${name}')" style="background:transparent; color:${headerColor}; font-size:0.75rem; padding:0; border:none; text-decoration:underline; font-weight:bold; cursor:pointer;">Message Uploader</button>
                 </div>`;
 
             let foundFiles = false;
@@ -1062,14 +1088,14 @@
                 if(data.urls.length > 1) {
                     controls = `
                     <div style="display:flex; justify-content:center; background:#111; padding:8px; border-radius:8px; border:1px solid #333; margin-top:5px;">
-                        <button id="txt_${d.id}" style="background:transparent; border:none; color:var(--neon-blue); font-size:0.85rem; font-weight:bold; cursor:pointer; width:100%;" onclick="window.jumpPage('${d.id}')">PAGE 1 OF ${data.urls.length} (TAP TO JUMP)</button>
+                        <button id="txt_${d.id}" style="background:transparent; border:none; color:${headerColor}; font-size:0.85rem; font-weight:bold; cursor:pointer; width:100%;" onclick="window.jumpPage('${d.id}')">PAGE 1 OF ${data.urls.length} (TAP TO JUMP)</button>
                     </div>`;
                 }
 
                 area.innerHTML += `
-                <div class="note-card" style="border-color:rgba(255,255,255,0.1);">
+                <div class="note-card" style="border-color:${selSub === "BOOKS" ? "#ffaa00" : "rgba(255,255,255,0.1)"};">
                     <img id="img_${d.id}" src="${data.urls[0]}" data-idx="0">
-                    <button style="width:100%; background:rgba(255,255,255,0.1); color:#fff; border:1px solid var(--neon-blue); padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.openZoom('${d.id}')">🔍 FULLSCREEN READER</button>
+                    <button style="width:100%; background:rgba(255,255,255,0.1); color:#fff; border:1px solid ${headerColor}; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.openZoom('${d.id}')">🔍 FULLSCREEN READER</button>
                     
                     ${controls}
 
@@ -1078,16 +1104,18 @@
                     </div>
 
                     <div class="comment-area" id="c_${d.id}"></div>
-                    <div class="comment-input-grp"><input id="in_${d.id}" placeholder="Write a comment..."><button style="background:var(--neon-blue); color:#000;" onclick="window.postComm('${d.id}')">Post</button></div>
+                    <div class="comment-input-grp"><input id="in_${d.id}" placeholder="Write a comment..."><button style="background:${headerColor}; color:#000;" onclick="window.postComm('${d.id}')">Post</button></div>
                 </div>`;
                 listenComments(d.id);
             });
 
-            if(!foundFiles) { area.innerHTML += `<p style="text-align:center; color:#ff4d4d;">No pages found in this folder.</p>`; }
+            if(!foundFiles) {
+                area.innerHTML += `<p style="text-align:center; color:#ff4d4d;">No pages found in this folder.</p>`;
+            }
 
         } catch (error) {
             console.error("Firebase Error:", error);
-            area.innerHTML = `<p style="text-align:center; color:#ff4d4d;">Error loading files.</p>`;
+            area.innerHTML = `<p style="text-align:center; color:#ff4d4d;">Error loading files. Please check network connection.</p>`;
         }
     }
 
@@ -1111,7 +1139,7 @@
     };
 
     window.closeZoom = () => { 
-        window.setActivity(`Reading Notes: ${selChap}`);
+        window.setActivity(`Reading: ${selChap}`);
         document.getElementById('zoomModal').style.display = 'none'; 
         window.currentZoomId = null; 
     };
@@ -1200,7 +1228,6 @@
                 ? `<span style="font-size:0.7rem; background:#111; padding:3px 8px; border-radius:5px; border:1px solid #0aff0a; color:#0aff0a; font-weight:bold;">🟢 ONLINE</span>` 
                 : `<span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${timeAgo(u.last_active)}</span>`;
             
-            // Explicitly shows "Navigating..." if activity field is missing (old code running)
             const activityStatus = isOnline ? `<div style="font-size:0.75rem; color:var(--neon-blue); margin-top:3px; font-weight:bold;">👁️ ${u.activity || 'Navigating...'}</div>` : `<div style="font-size:0.75rem; color:#555; margin-top:3px;">💤 Offline</div>`;
 
             const chatBtn = (isOnline && u.code !== currentVault.code) ? `<button class="submit-btn" style="background:#0aff0a; color:#000; flex:1;" onclick="window.requestAdminChat('${u.code}')">TALK</button>` : '';
