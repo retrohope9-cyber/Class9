@@ -11,10 +11,12 @@
         :root { --neon-blue: #00d2ff; --neon-purple: #9d50bb; --bg: #05070a; --glass: rgba(255, 255, 255, 0.05); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Poppins', sans-serif; background: var(--bg); background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #05070a 100%); color: #fff; }
         #app-container { height: 100%; width: 100%; overflow-y: auto; overflow-x: hidden; position: relative;}
-        .page { display: none; width: 100%; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .page { display: none; width: 100%; min-height: 100vh; padding: 20px; box-sizing: border-box; position: relative; }
         .active { display: flex; flex-direction: column; align-items: center; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        h1 { font-family: 'Orbitron', sans-serif; text-align: center; background: linear-gradient(to right, var(--neon-blue), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.5rem; }
+        
+        h1 { font-family: 'Orbitron', sans-serif; text-align: center; background: linear-gradient(to right, var(--neon-blue), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.6rem; margin-top: 30px; margin-bottom: 5px; }
+        
         .grid { display: grid; grid-template-columns: 1fr; gap: 12px; width: 100%; max-width: 400px; }
         .item-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 600; text-transform: uppercase; color: #fff; transition: 0.2s; }
         .item-btn:active { background: var(--neon-blue); color: #000; }
@@ -23,7 +25,7 @@
         .submit-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); border: none; font-weight: bold; cursor: pointer;}
         .note-card { background: var(--glass); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; box-sizing: border-box; }
         .note-card img { width: 100%; border-radius: 10px; border: 1px solid var(--neon-purple); margin-bottom: 10px; }
-        .back-btn { align-self: flex-start; margin-bottom: 15px; color: var(--neon-blue); font-weight: bold; cursor: pointer; }
+        .back-btn { align-self: flex-start; margin-bottom: 15px; color: var(--neon-blue); font-weight: bold; cursor: pointer; z-index: 50; }
         
         .notice-board { width: 100%; max-width: 400px; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box;}
         .inbox-board { width: 100%; max-width: 400px; background: rgba(0, 210, 255, 0.05); border: 1px solid var(--neon-blue); padding: 15px; border-radius: 10px; margin-bottom: 20px; box-sizing: border-box; max-height: 350px; overflow-y: auto;}
@@ -33,6 +35,10 @@
         .comment-input-grp { display: flex; gap: 5px; margin-top: 10px; }
         .comment-input-grp input { margin: 0; padding: 10px; font-size: 0.8rem; }
         .comment-input-grp button { margin: 0; padding: 10px; width: auto; background: var(--neon-blue); color: black; font-weight: bold; }
+        
+        /* FIXED TOP RIGHT CORNER BELL UI */
+        .bell-btn { position: absolute; top: 20px; right: 20px; font-size: 1.4rem; cursor: pointer; background: var(--glass); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(10px); margin: 0; padding: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .badge { position: absolute; top: -2px; right: -2px; background: #ff4d4d; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.6rem; font-weight: bold; border: 2px solid var(--bg); display: none; }
         
         #liveChatBox { display: none; position: fixed; bottom: 20px; right: 20px; width: 90%; max-width: 350px; height: 400px; background: rgba(5,7,10,0.95); border: 2px solid #0aff0a; border-radius: 15px; z-index: 9999; flex-direction: column; padding: 15px; box-sizing: border-box; box-shadow: 0 0 20px rgba(10,255,10,0.3); backdrop-filter: blur(10px); }
         #chatMsgArea { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; padding-right: 5px; }
@@ -136,8 +142,12 @@
     </div>
 
     <div id="homePage" class="page">
+        <button class="bell-btn" onclick="window.navigateTo('inboxPage')">
+            🔔<span id="msgBadge" class="badge">0</span>
+        </button>
+        
         <h1>NOTES HUB</h1>
-        <p style="color:#888; font-size:0.8rem;">Welcome, <span id="userDisplay" style="color:var(--neon-blue);">Guest</span></p>
+        <p style="color:#888; font-size:0.8rem; margin-top:-5px; margin-bottom:20px;">Welcome, <span id="userDisplay" style="color:var(--neon-blue);">Guest</span></p>
         
         <div class="notice-board">
             <strong style="color: #ff4d4d; font-size: 0.9rem;">ADMIN BROADCAST:</strong>
@@ -153,16 +163,23 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:12px; width: 100%; max-width: 400px;">
-            <div class="item-btn" style="background: rgba(0, 210, 255, 0.1); border-color: var(--neon-blue); color: var(--neon-blue);" onclick="window.navigateTo('communityPage')">🌐 COMMUNITY HUB</div>
+            <div class="item-btn" style="background: rgba(0, 210, 255, 0.1); border-color: var(--neon-blue); color: var(--neon-blue);" onclick="window.openCommunity()">🌐 COMMUNITY HUB</div>
             
             <div style="display:flex; gap:12px;">
                 <div class="item-btn" style="flex: 1;" onclick="window.startVaultFlow()">POST</div>
                 <div class="item-btn" style="flex: 1;" onclick="window.navigateTo('subjectPage')">SEE</div>
             </div>
             
-            <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.navigateTo('wantedPage')">🎯 WANTED BOARD</div>
+            <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.openWantedBoard()">🎯 WANTED BOARD</div>
         </div>
         <p style="color:#333; font-size:0.7rem; margin-top:30px; letter-spacing:1px;">POWERED BY RETROSPECTIVE</p>
+    </div>
+
+    <div id="inboxPage" class="page">
+        <div class="back-btn" onclick="window.navigateTo('homePage')">← BACK</div>
+        <h1 style="color: var(--neon-purple);">PERSONAL INBOX</h1>
+        <p style="text-align:center; font-size:0.8rem; color:#888; margin-top:-10px; margin-bottom:20px;">Direct messages & alerts from Admin</p>
+        <div id="myMessagesArea" style="width:100%; max-width:400px; display:flex; flex-direction:column; gap:10px;"></div>
     </div>
 
     <div id="communityPage" class="page">
@@ -209,9 +226,6 @@
             <button class="submit-btn" id="upBtn" onclick="window.uploadNote()">UPLOAD TO SERVER</button>
         </div>
 
-        <h2 style="font-size: 1rem; color: var(--neon-purple);">MY ALERTS</h2>
-        <div id="myMessagesArea" style="width:100%; max-width:400px; margin-bottom: 20px;"></div>
-
         <h2 style="font-size: 1rem; color: var(--neon-blue);">MY FOLDERS</h2>
         <div id="myUploadsArea" style="width:100%; max-width:400px; display:flex; flex-direction:column; gap:10px;"></div>
     </div>
@@ -244,7 +258,7 @@
                 <h2 style="font-size: 1rem; color: #ff4d4d; margin-top:0;">GLOBAL BROADCAST</h2>
                 <button onclick="window.editCurrentBroadcast()" style="background:transparent; color:#aaa; border:1px solid #444; padding:2px 8px; border-radius:5px; font-size:0.7rem; cursor:pointer;">EDIT CURRENT</button>
             </div>
-            <textarea id="adminNoticeInput" placeholder="Write major announcement..." style="height:60px; resize:none;"></textarea>
+            <textarea id="adminNoticeInput" placeholder="Write major announcement..." style="height:60px;  resize:none;"></textarea>
             <p style="font-size:0.8rem; color:#aaa; margin:0 0 5px 0;">Attach Image:</p>
             <input type="file" id="adminNoticeImg" accept="image/*">
             <button class="submit-btn" style="background: #ff4d4d;" id="adminNoticeBtn" onclick="window.updateNotice()">BROADCAST</button>
@@ -305,7 +319,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot, updateDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, getDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCo56hgaC3u_tBtS_bN0z2mrY9NQx0xZDg",
@@ -364,7 +378,7 @@
             updateDoc(doc(db, "vaults", currentVault.code), { 
                 last_active: Date.now(),
                 activity: window.currentActivity || "Browsing..."
-            }).catch(e=>console.error("Telemetry Error")); 
+            }).catch(e=>{}); 
         }
     };
     setInterval(window.updatePresence, 10000);
@@ -378,7 +392,6 @@
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         
-        // --- ACTIVITY TELEMETRY MAPPING ---
         let newAct = window.currentActivity;
         if(id === 'homePage') newAct = "Home Page";
         else if(id === 'communityPage') newAct = "Community Hub";
@@ -389,6 +402,7 @@
         else if(id === 'viceAdminPage') newAct = "Vice Admin Panel";
         else if(id === 'gatePage') newAct = "Logging In...";
         else if(id === 'registerPage') newAct = "Creating Account";
+        else if(id === 'inboxPage') newAct = "Checking Personal Inbox";
         
         window.setActivity(newAct);
 
@@ -437,8 +451,6 @@
                 enableGlobalSync(currentVault.code);
                 enableFeedSync();
                 startLiveChatListener();
-                
-                if(communitySync) communitySync();
                 
                 window.navigateTo('homePage');
             } else { alert("Incorrect Code or Password"); }
@@ -600,9 +612,13 @@
         }
         await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
 
-        const snap = await getDocs(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")));
-        if(snap.docs.length > 20) {
-            const overflow = snap.docs.slice(20);
+        const snap = await getDocs(collection(db, "admin_feed"));
+        let posts = [];
+        snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+        posts.sort((a,b) => b.timestamp - a.timestamp);
+
+        if(posts.length > 20) {
+            const overflow = posts.slice(20);
             overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
         }
 
@@ -612,17 +628,26 @@
     };
 
 
-    // --- COMMUNITY HUB ---
+    // --- COMMUNITY HUB (JS FILTERING FIX) ---
     window.openCommunity = () => {
         window.navigateTo('communityPage');
         if(communitySync) communitySync();
-        communitySync = onSnapshot(query(collection(db, "community_posts"), orderBy("timestamp", "desc")), (snap) => {
+        
+        communitySync = onSnapshot(collection(db, "community_posts"), (snap) => {
             const list = document.getElementById('communityList');
             list.innerHTML = "";
             if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#888;'>No posts yet. Start the discussion!</p>"; return; }
             
+            // Extract and sort manually locally
+            let posts = [];
             snap.forEach(d => {
-                const p = d.data();
+                let data = d.data();
+                data.id = d.id;
+                posts.push(data);
+            });
+            posts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            posts.forEach(p => {
                 let repliesHtml = "";
                 if(p.replies && p.replies.length > 0) {
                     p.replies.forEach(r => {
@@ -630,10 +655,10 @@
                     });
                 }
 
-                let replyBtn = `<button onclick="window.replyCommunityPost('${d.id}', '${p.author}')" style="background:transparent; color:var(--neon-blue); border:none; cursor:pointer; font-size:0.75rem; padding:0; text-decoration:underline; margin-right:15px;">Reply</button>`;
+                let replyBtn = `<button onclick="window.replyCommunityPost('${p.id}', '${p.author}')" style="background:transparent; color:var(--neon-blue); border:none; cursor:pointer; font-size:0.75rem; padding:0; text-decoration:underline; margin-right:15px;">Reply</button>`;
                 let delBtn = "";
                 if(currentVault.name === "Retrospective" || currentVault.code === p.author_code || (currentVault.vice_admin && currentVault.vice_admin.powers && currentVault.vice_admin.powers.includes('community'))) {
-                    delBtn = `<button onclick="window.delCommunityPost('${d.id}')" style="background:transparent; color:#ff4d4d; border:none; cursor:pointer; font-size:0.75rem; padding:0; text-decoration:underline;">Delete</button>`;
+                    delBtn = `<button onclick="window.delCommunityPost('${p.id}')" style="background:transparent; color:#ff4d4d; border:none; cursor:pointer; font-size:0.75rem; padding:0; text-decoration:underline;">Delete</button>`;
                 }
                 
                 list.innerHTML += `
@@ -655,12 +680,18 @@
         if(!t) return;
         document.getElementById('communityInput').value = ""; 
         await addDoc(collection(db, "community_posts"), { author: currentVault.name, author_code: currentVault.code, text: t, timestamp: Date.now(), replies: [] });
-        const snap = await getDocs(query(collection(db, "community_posts"), orderBy("timestamp", "desc")));
-        if(snap.docs.length > 20) {
-            const overflow = snap.docs.slice(20);
+        
+        const snap = await getDocs(collection(db, "community_posts"));
+        let posts = [];
+        snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+        posts.sort((a,b) => b.timestamp - a.timestamp);
+
+        if(posts.length > 20) {
+            const overflow = posts.slice(20);
             overflow.forEach(async (d) => await deleteDoc(doc(db, "community_posts", d.id)));
         }
     };
+    
     window.replyCommunityPost = async (id, author) => {
         const txt = prompt(`Reply to ${author}:`);
         if(!txt) return;
@@ -795,14 +826,19 @@
         document.getElementById('adminNoticeInput').value = ""; document.getElementById('adminNoticeImg').value = "";
     };
 
-    // --- FEED INBOX ---
+    // --- FEED INBOX (JS SORT FIX) ---
     function enableFeedSync() {
         if(window.feedSyncRef) window.feedSyncRef();
-        window.feedSyncRef = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), (snap) => {
+        
+        window.feedSyncRef = onSnapshot(collection(db, "admin_feed"), (snap) => {
             const area = document.getElementById('adminFeedArea'); area.innerHTML = "";
             if(snap.empty) { area.innerHTML = "<i style='color:#666;'>No recent messages...</i>"; return; }
-            snap.forEach(d => {
-                const data = d.data();
+            
+            let posts = [];
+            snap.forEach(d => { let data = d.data(); data.id = d.id; posts.push(data); });
+            posts.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            posts.forEach(data => {
                 let imgHtml = data.img ? `<img src="${data.img}" style="width:100%; border-radius:8px; margin-top:8px; border:1px solid #333;">` : "";
                 area.innerHTML += `<div style="padding-bottom:15px; border-bottom:1px solid #222; margin-bottom:12px;"><div>${data.text}</div>${imgHtml}</div>`;
             });
@@ -824,9 +860,13 @@
         }
         await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
 
-        const snap = await getDocs(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")));
-        if(snap.docs.length > 20) {
-            const overflow = snap.docs.slice(20);
+        const snap = await getDocs(collection(db, "admin_feed"));
+        let posts = [];
+        snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+        posts.sort((a,b) => b.timestamp - a.timestamp);
+
+        if(posts.length > 20) {
+            const overflow = posts.slice(20);
             overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
         }
 
@@ -842,15 +882,20 @@
     };
     window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
 
-    // --- WANTED BOARD ---
+    // --- WANTED BOARD (JS SORT FIX) ---
     window.openWantedBoard = () => {
         window.navigateTo('wantedPage');
         if(wantedSync) wantedSync();
-        wantedSync = onSnapshot(query(collection(db, "wanted"), orderBy("timestamp", "desc")), (snap) => {
+        
+        wantedSync = onSnapshot(collection(db, "wanted"), (snap) => {
             const list = document.getElementById('wantedList'); list.innerHTML = "";
-            snap.forEach(d => {
-                const r = d.data();
-                let btn = `<button onclick="window.resolveRequest('${d.id}')" style="width:100%; background:var(--neon-blue); color:black; font-weight:bold; border:none; padding:8px; margin-top:5px; border-radius:5px; cursor:pointer;">✅ WISH FULFILLED</button>`;
+            
+            let posts = [];
+            snap.forEach(d => { let data = d.data(); data.id = d.id; posts.push(data); });
+            posts.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            posts.forEach(r => {
+                let btn = `<button onclick="window.resolveRequest('${r.id}')" style="width:100%; background:var(--neon-blue); color:black; font-weight:bold; border:none; padding:8px; margin-top:5px; border-radius:5px; cursor:pointer;">✅ WISH FULFILLED</button>`;
                 list.innerHTML += `<div class="glass-box" style="padding:15px; border-color:#ffaa00;"><b>${r.author} asks:</b><br>${r.text}<br>${btn}</div>`;
             });
         });
@@ -860,9 +905,14 @@
         if(t) { 
             await addDoc(collection(db, "wanted"), { author: currentVault.name, text: t, timestamp: Date.now() }); 
             document.getElementById('reqInput').value = ""; 
-            const snap = await getDocs(query(collection(db, "wanted"), orderBy("timestamp", "desc")));
-            if(snap.docs.length > 20) {
-                const overflow = snap.docs.slice(20);
+            
+            const snap = await getDocs(collection(db, "wanted"));
+            let posts = [];
+            snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+            posts.sort((a,b) => b.timestamp - a.timestamp);
+
+            if(posts.length > 20) {
+                const overflow = posts.slice(20);
                 overflow.forEach(async (d) => await deleteDoc(doc(db, "wanted", d.id)));
             }
         }
@@ -984,7 +1034,7 @@
         }
     };
 
-    // --- VIEWER & ZOOM SYSTEM ---
+    // --- VIEWER ---
     const subs = ["BOOKS", "History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; 
@@ -1028,7 +1078,7 @@
         selChap = c; 
         window.setActivity(`Viewing: ${c}`);
         window.navigateTo('posterListPage');
-        
+       
         const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
         const users = new Map();
         snap.forEach(d => {
@@ -1187,11 +1237,15 @@
         if(window.radarInterval) clearInterval(window.radarInterval);
         window.radarInterval = setInterval(window.renderRadar, 3000); 
 
+        // PURE JS COLLECTION CALL
         if(window.adminFeedSyncRef) window.adminFeedSyncRef();
-        window.adminFeedSyncRef = onSnapshot(query(collection(db, "admin_feed"), orderBy("timestamp", "desc")), snap => {
+        window.adminFeedSyncRef = onSnapshot(collection(db, "admin_feed"), snap => {
             const mg = document.getElementById('adminFeedManageArea'); mg.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
+            let posts = [];
+            snap.forEach(d => { let data = d.data(); data.id = d.id; posts.push(data); });
+            posts.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            posts.forEach(data => {
                 let imgThumb = data.img ? `<br><img src="${data.img}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; margin-top:5px; border:1px solid #444;">` : "";
                 
                 const safeText = data.text.replace(/'/g, "\\'"); 
@@ -1199,8 +1253,8 @@
                 mg.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; border-radius:5px; align-items:center; font-size:0.8rem; border:1px solid #222;">
                     <div style="flex:1; padding-right:10px;">${data.text} ${imgThumb}</div>
                     <div style="display:flex; gap:5px;">
-                        <button onclick="window.editAdminFeed('${d.id}', '${safeText}')" style="background:#444; color:#fff; border:none; padding:4px 8px; cursor:pointer; border-radius:3px;">EDIT</button>
-                        <button onclick="window.delAdminFeed('${d.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button>
+                        <button onclick="window.editAdminFeed('${data.id}', '${safeText}')" style="background:#444; color:#fff; border:none; padding:4px 8px; cursor:pointer; border-radius:3px;">EDIT</button>
+                        <button onclick="window.delAdminFeed('${data.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button>
                     </div>
                 </div>`;
             });
@@ -1323,15 +1377,40 @@
             });
         });
     }
+
     window.delNote = async (id) => { if(confirm("Delete entire folder?")) await deleteDoc(doc(db, "all_notes", id)); };
 
+    // --- PERSONAL INBOX SYNC ---
     function enableMessageSync(c) {
         onSnapshot(query(collection(db, "messages"), where("to_code", "==", c)), snap => {
-            const d = document.getElementById('myMessagesArea'); d.innerHTML = "";
-            snap.forEach(x => d.innerHTML += `<div class="glass-box" style="padding:10px; border-color:var(--neon-purple);"><b style="color:var(--neon-purple)">${x.data().from}:</b> ${x.data().text} <button style="float:right; background:#333; border:none; color:white; padding:2px 8px; border-radius:4px; cursor:pointer;" onclick="window.delMsg('${x.id}')">X</button></div>`);
+            const d = document.getElementById('myMessagesArea');
+            const badge = document.getElementById('msgBadge');
+            
+            d.innerHTML = "";
+            
+            if(snap.empty) {
+                d.innerHTML = "<p style='text-align:center; color:#888;'>Your inbox is empty.</p>";
+                if(badge) badge.style.display = 'none';
+                return;
+            }
+            
+            if(badge) {
+                badge.innerText = snap.size;
+                badge.style.display = 'flex';
+            }
+
+            snap.forEach(x => {
+                d.innerHTML += `<div class="glass-box" style="padding:15px; border-color:var(--neon-purple); margin-bottom:10px;">
+                    <b style="color:var(--neon-purple); font-size:0.9rem;">${x.data().from}:</b> 
+                    <div style="margin-top:5px; font-size:0.85rem; color:#ddd;">${x.data().text}</div>
+                    <button style="margin-top:10px; width:100%; background:rgba(255,0,0,0.2); border:1px solid #ff4d4d; color:#ff4d4d; padding:8px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:0.7rem;" onclick="window.delMsg('${x.id}')">DELETE MESSAGE</button>
+                </div>`;
+            });
         });
     }
+    
     window.delMsg = async (id) => await deleteDoc(doc(db, "messages", id));
+    window.sendMsg = async (c, n) => { const m = prompt("Message:"); if(m) await addDoc(collection(db, "messages"), { to_code: c, from: currentVault.name, text: m }); };
     window.flagNote = async (c, ch) => { if(confirm("Report blurry?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Please check your upload: ${ch}` }); };
 
     function listenComments(id) {
