@@ -153,14 +153,14 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:12px; width: 100%; max-width: 400px;">
-            <div class="item-btn" style="background: rgba(0, 210, 255, 0.1); border-color: var(--neon-blue); color: var(--neon-blue);" onclick="window.openCommunity()">🌐 COMMUNITY HUB</div>
+            <div class="item-btn" style="background: rgba(0, 210, 255, 0.1); border-color: var(--neon-blue); color: var(--neon-blue);" onclick="window.navigateTo('communityPage')">🌐 COMMUNITY HUB</div>
             
             <div style="display:flex; gap:12px;">
                 <div class="item-btn" style="flex: 1;" onclick="window.startVaultFlow()">POST</div>
                 <div class="item-btn" style="flex: 1;" onclick="window.navigateTo('subjectPage')">SEE</div>
             </div>
             
-            <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.openWantedBoard()">🎯 WANTED BOARD</div>
+            <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.navigateTo('wantedPage')">🎯 WANTED BOARD</div>
         </div>
         <p style="color:#333; font-size:0.7rem; margin-top:30px; letter-spacing:1px;">POWERED BY RETROSPECTIVE</p>
     </div>
@@ -335,6 +335,9 @@
     window.vaTargetCode = null;
     window.vaTargetName = null;
     window.vaTimer = null;
+    
+    // Explicit global state for Telemetry
+    window.currentActivity = "Logging In...";
 
     // --- SYSTEM SECRETS ---
     window.systemPosterCode = "@777"; 
@@ -354,21 +357,45 @@
         alert("SYSTEM SECURITY UPDATED.");
     };
 
-    // --- TRACKING & NAVIGATION ---
+    // --- BULLETPROOF TELEMETRY & PRESENCE ---
     window.updatePresence = () => {
-        if(currentVault) { updateDoc(doc(db, "vaults", currentVault.code), { last_active: Date.now() }).catch(e=>{}); }
+        if(currentVault) { 
+            updateDoc(doc(db, "vaults", currentVault.code), { 
+                last_active: Date.now(),
+                activity: window.currentActivity || "Browsing..."
+            }).catch(e=>console.error("Telemetry Error")); 
+        }
     };
     setInterval(window.updatePresence, 10000);
+
+    window.setActivity = (act) => {
+        window.currentActivity = act;
+        window.updatePresence();
+    };
 
     window.showPage = (id) => {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        window.updatePresence();
+        
+        let newAct = window.currentActivity;
+        if(id === 'homePage') newAct = "Home Page";
+        else if(id === 'communityPage') newAct = "Community Hub";
+        else if(id === 'wantedPage') newAct = "Wanted Board";
+        else if(id === 'dashboardPage') newAct = "In Vault Dashboard";
+        else if(id === 'subjectPage') newAct = "Browsing Subjects";
+        else if(id === 'adminPage') newAct = "God Mode (Admin)";
+        else if(id === 'viceAdminPage') newAct = "Vice Admin Panel";
+        else if(id === 'gatePage') newAct = "Logging In...";
+        else if(id === 'registerPage') newAct = "Creating Account";
+        
+        window.setActivity(newAct);
+
         if(id !== 'galleryPage') {
             activeCommentListeners.forEach(unsub => unsub());
             activeCommentListeners = [];
         }
     };
+    
     window.navigateTo = (id) => { history.pushState({page: id}, "", "#" + id); window.showPage(id); };
     window.addEventListener('popstate', (e) => {
         if(e.state && e.state.page) { window.showPage(e.state.page); } else { window.showPage('gatePage'); }
@@ -398,7 +425,8 @@
                 currentVault = snap.data();
                 if(currentVault.code === "777") currentVault.name = "Retrospective";
                 
-                await updateDoc(doc(db, "vaults", code), { last_active: Date.now() });
+                window.currentActivity = "Home Page";
+                await updateDoc(doc(db, "vaults", code), { last_active: Date.now(), activity: window.currentActivity });
 
                 document.getElementById('userDisplay').innerText = currentVault.name;
                 document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
@@ -407,6 +435,10 @@
                 enableGlobalSync(currentVault.code);
                 enableFeedSync();
                 startLiveChatListener();
+                
+                // Fetch community count to ensure listener starts, but navigate handles the rest
+                if(communitySync) communitySync();
+                
                 window.navigateTo('homePage');
             } else { alert("Incorrect Code or Password"); }
         } catch(e) { alert("Network Error"); }
@@ -420,7 +452,8 @@
             const check = await getDoc(doc(db, "vaults", code));
             if(check.exists()) return alert("Code Taken");
             
-            await setDoc(doc(db, "vaults", code), { name, pass, code, last_active: Date.now() });
+            window.currentActivity = "Home Page";
+            await setDoc(doc(db, "vaults", code), { name, pass, code, last_active: Date.now(), activity: window.currentActivity });
             
             currentVault = { name, pass, code };
             document.getElementById('userDisplay').innerText = currentVault.name;
@@ -435,7 +468,7 @@
         } else { alert("Invalid inputs. Ensure 3-digit code."); }
     };
 
-    // --- SECOND LOCK ---
+    // --- SECOND LOCK (POST/ADMIN/VICE-ADMIN) ---
     window.startVaultFlow = () => {
         const auth = prompt("ENTER AUTHORIZATION CODE:");
         if(!auth) return;
@@ -646,7 +679,7 @@
         alert("Community Hub has been completely wiped.");
     };
 
-    // --- REWRITTEN LIVE CHAT SYSTEM ---
+    // --- LIVE CHAT SYSTEM ---
     function startLiveChatListener() {
         if(!currentVault) return;
         if(window.chatUnsubAdmin) window.chatUnsubAdmin();
@@ -907,6 +940,7 @@
     };
 
     window.editFolder = async (id) => {
+        window.setActivity("Editing Folder Pages");
         window.currentEditId = id;
         window.navigateTo('editFolderPage');
         window.renderFolderEdit();
@@ -949,7 +983,7 @@
         }
     };
 
-    // --- VIEWER & ZOOM SYSTEM ---
+    // --- VIEWER ---
     const subs = ["History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = s;
@@ -957,14 +991,13 @@
     });
 
     async function loadChapters(s) {
-        selSub = s; window.navigateTo('chapterPage');
+        selSub = s; 
+        window.setActivity(`Browsing Subject: ${s}`);
+        window.navigateTo('chapterPage');
         
         const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", s)));
-        
         const chaps = new Set(); 
-        snap.forEach(d => {
-            if(d.data().chapter) chaps.add(d.data().chapter);
-        });
+        snap.forEach(d => { if(d.data().chapter) chaps.add(d.data().chapter); });
         
         const g = document.getElementById('chapGrid'); g.innerHTML = "";
         if(chaps.size === 0) { g.innerHTML = "<p style='color:#888; text-align:center;'>No chapters found.</p>"; return; }
@@ -976,10 +1009,11 @@
     }
 
     async function loadPosters(c) {
-        selChap = c; window.navigateTo('posterListPage');
+        selChap = c; 
+        window.setActivity(`Viewing Chapter: ${c}`);
+        window.navigateTo('posterListPage');
         
         const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
-        
         const users = new Map();
         snap.forEach(d => {
             const data = d.data();
@@ -996,6 +1030,7 @@
     }
 
     async function loadGallery(name, code) {
+        window.setActivity(`Reading Notes: ${selChap}`);
         window.navigateTo('galleryPage');
         const area = document.getElementById('notesArea'); 
         area.innerHTML = "Opening...";
@@ -1018,7 +1053,6 @@
 
             snap.forEach(d => {
                 const data = d.data();
-                
                 if(!data.urls || data.urls.length === 0) return; 
 
                 foundFiles = true;
@@ -1049,18 +1083,17 @@
                 listenComments(d.id);
             });
 
-            if(!foundFiles) {
-                area.innerHTML += `<p style="text-align:center; color:#ff4d4d;">No pages found in this folder.</p>`;
-            }
+            if(!foundFiles) { area.innerHTML += `<p style="text-align:center; color:#ff4d4d;">No pages found in this folder.</p>`; }
 
         } catch (error) {
             console.error("Firebase Error:", error);
-            area.innerHTML = `<p style="text-align:center; color:#ff4d4d;">Error loading files. Please check network connection.</p>`;
+            area.innerHTML = `<p style="text-align:center; color:#ff4d4d;">Error loading files.</p>`;
         }
     }
 
     // ZOOM SYSTEM
     window.openZoom = (id) => {
+        window.setActivity(`Zoomed In: ${selChap}`);
         window.currentZoomId = id;
         const img = document.getElementById(`img_${id}`);
         const idx = parseInt(img.dataset.idx);
@@ -1077,7 +1110,11 @@
         }
     };
 
-    window.closeZoom = () => { document.getElementById('zoomModal').style.display = 'none'; window.currentZoomId = null; };
+    window.closeZoom = () => { 
+        window.setActivity(`Reading Notes: ${selChap}`);
+        document.getElementById('zoomModal').style.display = 'none'; 
+        window.currentZoomId = null; 
+    };
 
     window.zoomFlip = (dir) => {
         if(!window.currentZoomId) return;
@@ -1109,10 +1146,9 @@
         } else { alert("Invalid page number."); }
     };
 
-    // --- SYSTEM RADAR / ADMIN TOOLS WITH REAL-TIME SYNC ---
+    // --- ADMIN RADAR ---
     window.loadAdminDashboard = async () => {
         const list = document.getElementById('adminList'); 
-        list.innerHTML = "Loading Radar...";
         
         if(window.vaultsSync) window.vaultsSync();
         window.vaultsSync = onSnapshot(collection(db, "vaults"), snap => {
@@ -1164,6 +1200,9 @@
                 ? `<span style="font-size:0.7rem; background:#111; padding:3px 8px; border-radius:5px; border:1px solid #0aff0a; color:#0aff0a; font-weight:bold;">🟢 ONLINE</span>` 
                 : `<span style="font-size:0.7rem; background:#222; padding:3px 8px; border-radius:5px; border:1px solid #444; color:#aaa;">Seen: ${timeAgo(u.last_active)}</span>`;
             
+            // Explicitly shows "Navigating..." if activity field is missing (old code running)
+            const activityStatus = isOnline ? `<div style="font-size:0.75rem; color:var(--neon-blue); margin-top:3px; font-weight:bold;">👁️ ${u.activity || 'Navigating...'}</div>` : `<div style="font-size:0.75rem; color:#555; margin-top:3px;">💤 Offline</div>`;
+
             const chatBtn = (isOnline && u.code !== currentVault.code) ? `<button class="submit-btn" style="background:#0aff0a; color:#000; flex:1;" onclick="window.requestAdminChat('${u.code}')">TALK</button>` : '';
 
             let vaBtn = "";
@@ -1179,6 +1218,7 @@
                     <h3 style="margin:0; color:#ff4d4d;">${u.name}</h3>
                     ${radarStatus}
                 </div>
+                ${activityStatus}
                 <p style="margin:10px 0;">ID: <b>${u.code}</b> | Pass: <span style="color:#ffaa00">${u.pass}</span></p>
                 <div style="display:flex; gap:5px; margin-bottom:5px;">
                     ${chatBtn}
@@ -1200,7 +1240,6 @@
 
     window.adminViewPosts = async (code) => {
         const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Scanning...";
-        
         const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
         div.innerHTML = `Folders: ${snap.size}`;
     };
@@ -1222,14 +1261,12 @@
             comms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
             await deleteDoc(doc(db, "all_notes", n.id));
         });
-        
         const msgs = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
         msgs.forEach(async m => await deleteDoc(doc(db, "messages", m.id)));
         const reqs = await getDocs(query(collection(db, "wanted"), where("author", "==", name)));
         reqs.forEach(async r => await deleteDoc(doc(db, "wanted", r.id)));
         const myComms = await getDocs(query(collection(db, "comments"), where("author", "==", name)));
         myComms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
-        
         const commPosts = await getDocs(query(collection(db, "community_posts"), where("author_code", "==", code)));
         commPosts.forEach(async cp => await deleteDoc(doc(db, "community_posts", cp.id)));
 
