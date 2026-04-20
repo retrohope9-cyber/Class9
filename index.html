@@ -652,7 +652,7 @@
     };
 
 
-    // --- COMMUNITY HUB (SAFE JS SORTING) ---
+    // --- COMMUNITY HUB ---
     window.openCommunity = () => {
         window.navigateTo('communityPage');
         if(communitySync) communitySync();
@@ -661,8 +661,8 @@
             const list = document.getElementById('communityList');
             list.innerHTML = "";
             if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#888;'>No posts yet. Start the discussion!</p>"; return; }
-            
-            let posts = [];
+
+                                   let posts = [];
             snap.forEach(d => {
                 let data = d.data();
                 data.id = d.id;
@@ -849,7 +849,7 @@
         document.getElementById('adminNoticeInput').value = ""; document.getElementById('adminNoticeImg').value = "";
     };
 
-    // --- FEED INBOX (SAFE JS SORTING) ---
+    // --- FEED INBOX ---
     function enableFeedSync() {
         if(window.feedSyncRef) window.feedSyncRef();
         
@@ -905,7 +905,7 @@
     };
     window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
 
-    // --- WANTED BOARD (SAFE JS SORTING) ---
+    // --- WANTED BOARD ---
     window.openWantedBoard = () => {
         window.navigateTo('wantedPage');
         if(wantedSync) wantedSync();
@@ -942,7 +942,7 @@
     };
     window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
 
-    // --- UPLOAD ENGINE ---
+    // --- UPLOAD ENGINE (WITH JS FILTER FIX) ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
         const chap = document.getElementById('pChap').value.trim();
@@ -978,12 +978,21 @@
 
         btn.innerText = "Updating Server...";
 
-        const q = query(collection(db, "all_notes"), where("vault_code", "==", currentVault.code), where("subject", "==", sub), where("chapter", "==", chap));
+        const q = query(collection(db, "all_notes"), where("vault_code", "==", currentVault.code));
         const snap = await getDocs(q);
 
-        if(!snap.empty) {
-            const existingDocId = snap.docs[0].id;
-            const existingUrls = snap.docs[0].data().urls || [];
+        let existingDocId = null;
+        let existingUrls = [];
+        
+        snap.forEach(d => {
+            const data = d.data();
+            if(data.subject === sub && data.chapter === chap) {
+                existingDocId = d.id;
+                existingUrls = data.urls || [];
+            }
+        });
+
+        if(existingDocId) {
             const mergedUrls = [...existingUrls, ...newUrls];
             await updateDoc(doc(db, "all_notes", existingDocId), { urls: mergedUrls });
         } else {
@@ -1102,7 +1111,7 @@
         }
     };
 
-    // --- VIEWER ---
+    // --- VIEWER (WITH STRICT JS FILTERING) ---
     const subs = ["BOOKS", "History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; 
@@ -1147,13 +1156,15 @@
         window.setActivity(`Viewing: ${c}`);
         window.navigateTo('posterListPage');
         
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
+        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub)));
         const users = new Map();
         snap.forEach(d => {
             const data = d.data();
-            const vCode = data.vault_code || data.author || "Legacy";
-            const vName = data.display_author || data.author || "Unknown User";
-            users.set(vCode, vName);
+            if(data.chapter === c) {
+                const vCode = data.vault_code || data.author || "Legacy";
+                const vName = data.display_author || data.author || "Unknown User";
+                users.set(vCode, vName);
+            }
         });
         
         const g = document.getElementById('posterGrid'); g.innerHTML = "";
@@ -1177,7 +1188,7 @@
         area.innerHTML = "Opening...";
 
         try {
-            const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code), where("chapter", "==", selChap)));
+            const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
             
             const headerColor = selSub === "BOOKS" ? "#ffaa00" : "var(--neon-blue)";
             const headerIcon = selSub === "BOOKS" ? "📖" : "📚";
@@ -1197,6 +1208,10 @@
 
             snap.forEach(d => {
                 const data = d.data();
+                
+                // ULTIMATE FIX: Validate BOTH subject and chapter locally
+                if(data.subject !== selSub || data.chapter !== selChap) return;
+
                 if(!data.urls || data.urls.length === 0) return; 
 
                 foundFiles = true;
