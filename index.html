@@ -36,7 +36,6 @@
         .comment-input-grp input { margin: 0; padding: 10px; font-size: 0.8rem; }
         .comment-input-grp button { margin: 0; padding: 10px; width: auto; background: var(--neon-blue); color: black; font-weight: bold; }
         
-        /* FIXED TOP RIGHT CORNER BELL UI */
         .bell-btn { position: absolute; top: 20px; right: 20px; font-size: 1.4rem; cursor: pointer; background: var(--glass); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(10px); margin: 0; padding: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .badge { position: absolute; top: -2px; right: -2px; background: #ff4d4d; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.6rem; font-weight: bold; border: 2px solid var(--bg); display: none; }
         
@@ -45,7 +44,7 @@
         
         #zoomModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         
-        #vaModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px); }
     </style>
 </head>
 <body>
@@ -72,7 +71,7 @@
     </div>
 </div>
 
-<div id="vaModal">
+<div id="vaModal" class="modal-overlay">
     <div class="glass-box" style="border-color: #00d2ff; padding: 25px; width:100%; max-width:350px;">
         <h2 style="color:#00d2ff; margin-top:0; text-align:center;">GRANT VA POWERS</h2>
         <p id="vaModalName" style="color:#aaa; text-align:center; font-size:0.9rem; margin-top:-10px;"></p>
@@ -101,6 +100,22 @@
         <div style="display:flex; gap:10px; margin-top:20px;">
             <button class="submit-btn" style="background:#444; flex:1;" onclick="document.getElementById('vaModal').style.display='none'">CANCEL</button>
             <button class="submit-btn" style="background:#00d2ff; color:#000; flex:1;" onclick="window.confirmGrantVA()">GRANT</button>
+        </div>
+    </div>
+</div>
+
+<div id="pmModal" class="modal-overlay">
+    <div class="glass-box" style="border-color: var(--neon-purple); padding: 25px; width:100%; max-width:350px;">
+        <h2 style="color:var(--neon-purple); margin-top:0; text-align:center;">SEND DIRECT MESSAGE</h2>
+        <p id="pmModalName" style="color:#aaa; text-align:center; font-size:0.9rem; margin-top:-10px;"></p>
+
+        <textarea id="pmTextInput" placeholder="Write your message or warning here..." style="height:80px; resize:none;"></textarea>
+        <p style="font-size:0.8rem; color:#aaa; margin:10px 0 5px 0;">Attach Image Proof (Optional):</p>
+        <input type="file" id="pmImgInput" accept="image/*">
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="submit-btn" style="background:#444; flex:1;" onclick="document.getElementById('pmModal').style.display='none'">CANCEL</button>
+            <button class="submit-btn" style="background:var(--neon-purple); color:#fff; flex:1;" id="pmSendBtn" onclick="window.confirmSendPM()">SEND</button>
         </div>
     </div>
 </div>
@@ -210,7 +225,7 @@
         <h1 id="userTitle">Vault</h1>
         
         <div class="glass-box">
-            <h2 style="font-size: 1rem; color: #fff; margin-top:0;">UPLOAD NOTES</h2>
+            <h2 style="font-size: 1rem; color: #fff; margin-top:0;">UPLOAD NEW FOLDER</h2>
             <select id="pSub">
                 <option>BOOKS</option>
                 <option>History</option><option>Geography</option><option>Civics</option>
@@ -233,6 +248,14 @@
     <div id="editFolderPage" class="page">
         <div class="back-btn" onclick="window.navigateTo('dashboardPage')">← BACK TO VAULT</div>
         <h1 id="editFolderTitle">FOLDER</h1>
+        
+        <div class="glass-box" style="border-color: var(--neon-blue); padding:15px; margin-bottom:15px; width:100%; max-width:400px;">
+            <h2 style="font-size: 1rem; color: var(--neon-blue); margin-top:0; text-align:center;">➕ ADD NEW PAGES</h2>
+            <p style="font-size:0.75rem; color:#888; text-align:center; margin-top:-5px;">Add new homework or notes directly to this existing folder.</p>
+            <input type="file" id="addPagesInp" accept="image/*,application/pdf" multiple style="margin-bottom:10px;">
+            <button class="submit-btn" id="addPagesBtn" onclick="window.addPagesToFolder()">UPLOAD & ADD TO FOLDER</button>
+        </div>
+
         <div id="editFolderImages" style="width:100%; max-width:400px; display:flex; flex-direction:column; gap:10px;"></div>
     </div>
 
@@ -258,7 +281,7 @@
                 <h2 style="font-size: 1rem; color: #ff4d4d; margin-top:0;">GLOBAL BROADCAST</h2>
                 <button onclick="window.editCurrentBroadcast()" style="background:transparent; color:#aaa; border:1px solid #444; padding:2px 8px; border-radius:5px; font-size:0.7rem; cursor:pointer;">EDIT CURRENT</button>
             </div>
-            <textarea id="adminNoticeInput" placeholder="Write major announcement..." style="height:60px;  resize:none;"></textarea>
+            <textarea id="adminNoticeInput" placeholder="Write major announcement..." style="height:60px; resize:none;"></textarea>
             <p style="font-size:0.8rem; color:#aaa; margin:0 0 5px 0;">Attach Image:</p>
             <input type="file" id="adminNoticeImg" accept="image/*">
             <button class="submit-btn" style="background: #ff4d4d;" id="adminNoticeBtn" onclick="window.updateNotice()">BROADCAST</button>
@@ -350,6 +373,7 @@
     window.vaTargetCode = null;
     window.vaTargetName = null;
     window.vaTimer = null;
+    window.pmTargetCode = null;
     
     // Explicit global state for Telemetry
     window.currentActivity = "Logging In...";
@@ -628,7 +652,7 @@
     };
 
 
-    // --- COMMUNITY HUB (JS FILTERING FIX) ---
+    // --- COMMUNITY HUB (SAFE JS SORTING) ---
     window.openCommunity = () => {
         window.navigateTo('communityPage');
         if(communitySync) communitySync();
@@ -638,7 +662,6 @@
             list.innerHTML = "";
             if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#888;'>No posts yet. Start the discussion!</p>"; return; }
             
-            // Extract and sort manually locally
             let posts = [];
             snap.forEach(d => {
                 let data = d.data();
@@ -826,7 +849,7 @@
         document.getElementById('adminNoticeInput').value = ""; document.getElementById('adminNoticeImg').value = "";
     };
 
-    // --- FEED INBOX (JS SORT FIX) ---
+    // --- FEED INBOX (SAFE JS SORTING) ---
     function enableFeedSync() {
         if(window.feedSyncRef) window.feedSyncRef();
         
@@ -882,7 +905,7 @@
     };
     window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
 
-    // --- WANTED BOARD (JS SORT FIX) ---
+    // --- WANTED BOARD (SAFE JS SORTING) ---
     window.openWantedBoard = () => {
         window.navigateTo('wantedPage');
         if(wantedSync) wantedSync();
@@ -980,7 +1003,7 @@
         document.getElementById('imgInp').value = "";
     };
 
-    // --- FOLDER EDITING ---
+    // --- FOLDER EDITING & ADDING PAGES ---
     window.editFolderName = async (id, oldSub, oldChap) => {
         let newSub = prompt("Enter new Subject:", oldSub);
         if(newSub === null) return;
@@ -995,6 +1018,51 @@
         window.currentEditId = id;
         window.navigateTo('editFolderPage');
         window.renderFolderEdit();
+    };
+
+    window.addPagesToFolder = async () => {
+        const files = document.getElementById('addPagesInp').files;
+        if(!files.length) return alert("Select files to add.");
+        
+        const btn = document.getElementById('addPagesBtn');
+        btn.innerText = "Processing..."; btn.disabled = true;
+
+        let newUrls = [];
+        for(let f of files) {
+            if(f.type === "application/pdf") {
+                const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
+                for(let i=1; i<=pdf.numPages; i++) {
+                    const p = await pdf.getPage(i);
+                    const cvs = document.createElement('canvas');
+                    const v = p.getViewport({scale:1.5});
+                    cvs.height = v.height; cvs.width = v.width;
+                    await p.render({canvasContext: cvs.getContext('2d'), viewport: v}).promise;
+                    
+                    const fd = new FormData();
+                    fd.append("image", cvs.toDataURL("image/jpeg").split(',')[1]);
+                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+                    const j = await res.json(); newUrls.push(j.data.url);
+                }
+            } else { 
+                const fd = new FormData();
+                fd.append("image", f);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+                const j = await res.json(); newUrls.push(j.data.url);
+            }
+        }
+
+        btn.innerText = "Appending to Folder...";
+        const docRef = doc(db, "all_notes", window.currentEditId);
+        const snap = await getDoc(docRef);
+        if(snap.exists()) {
+            const existingUrls = snap.data().urls || [];
+            await updateDoc(docRef, { urls: [...existingUrls, ...newUrls] });
+        }
+
+        alert("Pages Added!");
+        btn.innerText = "UPLOAD & ADD TO FOLDER"; btn.disabled = false;
+        document.getElementById('addPagesInp').value = "";
+        window.renderFolderEdit(); 
     };
 
     window.renderFolderEdit = async () => {
@@ -1078,7 +1146,7 @@
         selChap = c; 
         window.setActivity(`Viewing: ${c}`);
         window.navigateTo('posterListPage');
-       
+        
         const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub), where("chapter", "==", c)));
         const users = new Map();
         snap.forEach(d => {
@@ -1261,12 +1329,41 @@
         });
     };
 
-    window.adminPersonalMsg = async (code, name) => {
-        let msg = prompt(`Send a private alert/greeting to ${name}:`);
-        if(msg) {
-            await addDoc(collection(db, "messages"), { to_code: code, from: "SYSTEM ADMIN", text: msg });
-            alert("Direct message sent to their personal inbox.");
+    window.adminPersonalMsg = (code, name) => {
+        window.pmTargetCode = code;
+        document.getElementById('pmModalName').innerText = `To: ${name}`;
+        document.getElementById('pmTextInput').value = "";
+        document.getElementById('pmImgInput').value = "";
+        document.getElementById('pmModal').style.display = 'flex';
+    };
+
+    window.confirmSendPM = async () => {
+        const txt = document.getElementById('pmTextInput').value.trim();
+        const file = document.getElementById('pmImgInput').files[0];
+        
+        if(!txt && !file) return alert("Please enter text or attach an image.");
+
+        const btn = document.getElementById('pmSendBtn');
+        btn.innerText = "SENDING..."; btn.disabled = true;
+
+        let imgUrl = "";
+        if(file) {
+            const fd = new FormData(); fd.append("image", file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
+            const j = await res.json(); imgUrl = j.data.url;
         }
+        
+        await addDoc(collection(db, "messages"), { 
+            to_code: window.pmTargetCode, 
+            from: "SYSTEM ADMIN", 
+            text: txt, 
+            img: imgUrl,
+            timestamp: Date.now()
+        });
+
+        btn.innerText = "SEND"; btn.disabled = false;
+        document.getElementById('pmModal').style.display = 'none';
+        alert("Message sent securely to their personal inbox.");
     };
 
     window.renderRadar = () => {
@@ -1329,7 +1426,11 @@
         const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Spying...";
         const snap = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
         div.innerHTML = snap.empty ? "Inbox Empty" : "";
-        snap.forEach(m => div.innerHTML += `<div style="border-left:2px solid red; padding-left:5px; margin-bottom:5px;"><b>${m.data().from}:</b> ${m.data().text}</div>`);
+        snap.forEach(m => {
+            const data = m.data();
+            const hasImg = data.img ? `<span style="color:#00d2ff;">[🖼️ Image Attached]</span>` : "";
+            div.innerHTML += `<div style="border-left:2px solid red; padding-left:5px; margin-bottom:5px; font-size:0.75rem;"><b>${data.from}:</b> ${data.text} ${hasImg}</div>`;
+        });
     };
 
     window.forcePurge = async (code, name) => {
@@ -1380,7 +1481,7 @@
 
     window.delNote = async (id) => { if(confirm("Delete entire folder?")) await deleteDoc(doc(db, "all_notes", id)); };
 
-    // --- PERSONAL INBOX SYNC ---
+    // --- PERSONAL INBOX SYNC (SECURE & FULLY WORKING) ---
     function enableMessageSync(c) {
         onSnapshot(query(collection(db, "messages"), where("to_code", "==", c)), snap => {
             const d = document.getElementById('myMessagesArea');
@@ -1394,23 +1495,40 @@
                 return;
             }
             
+            let msgs = [];
+            snap.forEach(x => {
+                let data = x.data();
+                data.id = x.id;
+                msgs.push(data);
+            });
+            
             if(badge) {
-                badge.innerText = snap.size;
+                badge.innerText = msgs.length;
                 badge.style.display = 'flex';
             }
 
-            snap.forEach(x => {
+            // Pure JS sorting handles the timestamps without crashing the database
+            msgs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            msgs.forEach(x => {
+                const imgHtml = x.img ? `<img src="${x.img}" style="width:100%; border-radius:8px; margin-top:10px; border:1px solid var(--neon-purple);">` : "";
+                
                 d.innerHTML += `<div class="glass-box" style="padding:15px; border-color:var(--neon-purple); margin-bottom:10px;">
-                    <b style="color:var(--neon-purple); font-size:0.9rem;">${x.data().from}:</b> 
-                    <div style="margin-top:5px; font-size:0.85rem; color:#ddd;">${x.data().text}</div>
+                    <b style="color:var(--neon-purple); font-size:0.9rem;">${x.from}:</b> 
+                    <div style="margin-top:5px; font-size:0.85rem; color:#ddd;">${x.text}</div>
+                    ${imgHtml}
                     <button style="margin-top:10px; width:100%; background:rgba(255,0,0,0.2); border:1px solid #ff4d4d; color:#ff4d4d; padding:8px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:0.7rem;" onclick="window.delMsg('${x.id}')">DELETE MESSAGE</button>
                 </div>`;
             });
         });
     }
     
-    window.delMsg = async (id) => await deleteDoc(doc(db, "messages", id));
-    window.sendMsg = async (c, n) => { const m = prompt("Message:"); if(m) await addDoc(collection(db, "messages"), { to_code: c, from: currentVault.name, text: m }); };
+    window.delMsg = async (id) => {
+        if(confirm("Do you really want to permanently delete this message?")) {
+            await deleteDoc(doc(db, "messages", id));
+        }
+    };
+    
     window.flagNote = async (c, ch) => { if(confirm("Report blurry?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Please check your upload: ${ch}` }); };
 
     function listenComments(id) {
