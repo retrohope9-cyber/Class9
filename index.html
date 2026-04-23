@@ -357,7 +357,29 @@
     let app, db;
     try { app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e) { alert("Connection Error"); }
 
-    const IMGBB_API = "965fa1c8fd25314c86fc7e40d845a83a";
+    // DUAL API ENGINE IMPLEMENTATION
+    const IMGBB_APIS = ["64bfef66d1b1c3bd428a0de56d96aff3", "d74504c4ba97dcbf58a8512e96675d2b"];
+    let activeApiIdx = 0;
+
+    async function safeImgUpload(fileData) {
+        for(let i = 0; i < IMGBB_APIS.length; i++) {
+            let fd = new FormData();
+            fd.append("image", fileData);
+            try {
+                let res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_APIS[activeApiIdx]}`, {method:"POST", body:fd});
+                let j = await res.json();
+                if(j && j.data && j.data.url) return j.data.url;
+                
+                console.warn("API Limit reached. Switching to Backup API...");
+                activeApiIdx = (activeApiIdx + 1) % IMGBB_APIS.length;
+            } catch(e) {
+                activeApiIdx = (activeApiIdx + 1) % IMGBB_APIS.length;
+            }
+        }
+        alert("SYSTEM OVERLOAD: Both Image Servers are currently busy. Try again later.");
+        throw new Error("APIs exhausted");
+    }
+
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
@@ -612,9 +634,7 @@
 
         let imgUrl = "";
         if(file) {
-            const fd = new FormData(); fd.append("image", file);
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-            const j = await res.json(); imgUrl = j.data.url;
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
         }
         await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
         alert("Broadcasted to Hub!"); btn.innerText = "BROADCAST TO HUB"; btn.disabled = false;
@@ -630,9 +650,7 @@
 
         let imgUrl = "";
         if(file) {
-            const fd = new FormData(); fd.append("image", file);
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-            const j = await res.json(); imgUrl = j.data.url;
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
         }
         await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
 
@@ -646,13 +664,13 @@
             overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
         }
 
-        document.getElementById('vaFeedInput').value = ""; document.getElementById('vaFeedImg').value = "";
+      document.getElementById('vaFeedInput').value = ""; document.getElementById('vaFeedImg').value = "";
         btn.innerText = "SEND"; btn.disabled = false;
         alert("Sent to Inbox!");
     };
 
 
-    // --- COMMUNITY HUB ---
+    // --- COMMUNITY HUB (SAFE JS SORTING) ---
     window.openCommunity = () => {
         window.navigateTo('communityPage');
         if(communitySync) communitySync();
@@ -661,8 +679,8 @@
             const list = document.getElementById('communityList');
             list.innerHTML = "";
             if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#888;'>No posts yet. Start the discussion!</p>"; return; }
-
-                                   let posts = [];
+            
+            let posts = [];
             snap.forEach(d => {
                 let data = d.data();
                 data.id = d.id;
@@ -837,9 +855,7 @@
 
         let imgUrl = "";
         if(file) {
-            const fd = new FormData(); fd.append("image", file);
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-            const j = await res.json(); imgUrl = j.data.url;
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
         } else {
             const snap = await getDoc(doc(db, "system", "notice"));
             if(snap.exists() && snap.data().img) imgUrl = snap.data().img;
@@ -877,9 +893,7 @@
 
         let imgUrl = "";
         if(file) {
-            const fd = new FormData(); fd.append("image", file);
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-            const j = await res.json(); imgUrl = j.data.url;
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
         }
         await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
 
@@ -942,7 +956,7 @@
     };
     window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
 
-    // --- UPLOAD ENGINE (WITH JS FILTER FIX) ---
+    // --- UPLOAD ENGINE (WITH LIVE COUNTER & DUAL API FIXES) ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
         const chap = document.getElementById('pChap').value.trim();
@@ -950,33 +964,62 @@
         if(!chap || !files.length) return alert("Select File & Chapter");
         
         const btn = document.getElementById('upBtn');
-        btn.innerText = "Processing Pages..."; btn.disabled = true;
+        btn.innerText = "INITIALIZING SYSTEM..."; btn.disabled = true;
 
-        let newUrls = [];
+        let totalPages = 0;
+        let fileQueue = [];
+        
         for(let f of files) {
             if(f.type === "application/pdf") {
                 const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
-                for(let i=1; i<=pdf.numPages; i++) {
-                    const p = await pdf.getPage(i);
+                totalPages += pdf.numPages;
+                fileQueue.push({type: 'pdf', pdf: pdf});
+            } else {
+                totalPages += 1;
+                fileQueue.push({type: 'img', file: f});
+            }
+        }
+
+        btn.innerText = `0/${totalPages} PAGES PROCESSED`;
+        let newUrls = [];
+        let processedCount = 0;
+
+        for(let item of fileQueue) {
+            if(item.type === 'pdf') {
+                for(let i=1; i<=item.pdf.numPages; i++) {
+                    const p = await item.pdf.getPage(i);
                     const cvs = document.createElement('canvas');
                     const v = p.getViewport({scale:1.5});
                     cvs.height = v.height; cvs.width = v.width;
                     await p.render({canvasContext: cvs.getContext('2d'), viewport: v}).promise;
                     
-                    const fd = new FormData();
-                    fd.append("image", cvs.toDataURL("image/jpeg").split(',')[1]);
-                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-                    const j = await res.json(); newUrls.push(j.data.url);
+                    const base64Data = cvs.toDataURL("image/jpeg").split(',')[1];
+                    try {
+                        newUrls.push(await safeImgUpload(base64Data));
+                    } catch (error) {
+                        alert("Upload failed. Stopping process.");
+                        btn.innerText = "UPLOAD TO SERVER"; btn.disabled = false;
+                        return;
+                    }
+
+                    processedCount++;
+                    btn.innerText = `${processedCount}/${totalPages} PAGES PROCESSED`;
                 }
             } else { 
-                const fd = new FormData();
-                fd.append("image", f);
-                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-                const j = await res.json(); newUrls.push(j.data.url);
+                try {
+                    newUrls.push(await safeImgUpload(item.file));
+                } catch (error) {
+                    alert("Upload failed. Stopping process.");
+                    btn.innerText = "UPLOAD TO SERVER"; btn.disabled = false;
+                    return;
+                }
+
+                processedCount++;
+                btn.innerText = `${processedCount}/${totalPages} PAGES PROCESSED`;
             }
         }
 
-        btn.innerText = "Updating Server...";
+        btn.innerText = "UPDATING SERVER...";
 
         const q = query(collection(db, "all_notes"), where("vault_code", "==", currentVault.code));
         const snap = await getDocs(q);
@@ -1012,7 +1055,7 @@
         document.getElementById('imgInp').value = "";
     };
 
-    // --- FOLDER EDITING & ADDING PAGES ---
+    // --- FOLDER EDITING & ADDING PAGES (WITH LIVE COUNTER & DUAL API FIXES) ---
     window.editFolderName = async (id, oldSub, oldChap) => {
         let newSub = prompt("Enter new Subject:", oldSub);
         if(newSub === null) return;
@@ -1034,33 +1077,62 @@
         if(!files.length) return alert("Select files to add.");
         
         const btn = document.getElementById('addPagesBtn');
-        btn.innerText = "Processing..."; btn.disabled = true;
+        btn.innerText = "INITIALIZING SYSTEM..."; btn.disabled = true;
 
-        let newUrls = [];
+        let totalPages = 0;
+        let fileQueue = [];
+        
         for(let f of files) {
             if(f.type === "application/pdf") {
                 const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
-                for(let i=1; i<=pdf.numPages; i++) {
-                    const p = await pdf.getPage(i);
+                totalPages += pdf.numPages;
+                fileQueue.push({type: 'pdf', pdf: pdf});
+            } else {
+                totalPages += 1;
+                fileQueue.push({type: 'img', file: f});
+            }
+        }
+
+        btn.innerText = `0/${totalPages} PAGES PROCESSED`;
+        let newUrls = [];
+        let processedCount = 0;
+
+        for(let item of fileQueue) {
+            if(item.type === 'pdf') {
+                for(let i=1; i<=item.pdf.numPages; i++) {
+                    const p = await item.pdf.getPage(i);
                     const cvs = document.createElement('canvas');
                     const v = p.getViewport({scale:1.5});
                     cvs.height = v.height; cvs.width = v.width;
                     await p.render({canvasContext: cvs.getContext('2d'), viewport: v}).promise;
                     
-                    const fd = new FormData();
-                    fd.append("image", cvs.toDataURL("image/jpeg").split(',')[1]);
-                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-                    const j = await res.json(); newUrls.push(j.data.url);
+                    const base64Data = cvs.toDataURL("image/jpeg").split(',')[1];
+                    try {
+                        newUrls.push(await safeImgUpload(base64Data));
+                    } catch(error) {
+                        alert("Upload failed. Stopping process.");
+                        btn.innerText = "UPLOAD & ADD TO FOLDER"; btn.disabled = false;
+                        return;
+                    }
+
+                    processedCount++;
+                    btn.innerText = `${processedCount}/${totalPages} PAGES PROCESSED`;
                 }
             } else { 
-                const fd = new FormData();
-                fd.append("image", f);
-                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-                const j = await res.json(); newUrls.push(j.data.url);
+                try {
+                    newUrls.push(await safeImgUpload(item.file));
+                } catch(error) {
+                    alert("Upload failed. Stopping process.");
+                    btn.innerText = "UPLOAD & ADD TO FOLDER"; btn.disabled = false;
+                    return;
+                }
+
+                processedCount++;
+                btn.innerText = `${processedCount}/${totalPages} PAGES PROCESSED`;
             }
         }
 
-        btn.innerText = "Appending to Folder...";
+        btn.innerText = "APPENDING TO FOLDER...";
         const docRef = doc(db, "all_notes", window.currentEditId);
         const snap = await getDoc(docRef);
         if(snap.exists()) {
@@ -1111,7 +1183,7 @@
         }
     };
 
-    // --- VIEWER (WITH STRICT JS FILTERING) ---
+    // --- VIEWER ---
     const subs = ["BOOKS", "History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
     subs.forEach(s => {
         const b = document.createElement('div'); b.className = 'item-btn'; 
@@ -1209,7 +1281,6 @@
             snap.forEach(d => {
                 const data = d.data();
                 
-                // ULTIMATE FIX: Validate BOTH subject and chapter locally
                 if(data.subject !== selSub || data.chapter !== selChap) return;
 
                 if(!data.urls || data.urls.length === 0) return; 
@@ -1363,9 +1434,7 @@
 
         let imgUrl = "";
         if(file) {
-            const fd = new FormData(); fd.append("image", file);
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd});
-            const j = await res.json(); imgUrl = j.data.url;
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
         }
         
         await addDoc(collection(db, "messages"), { 
@@ -1498,24 +1567,26 @@
 
     // --- PERSONAL INBOX SYNC (SECURE & FULLY WORKING) ---
     function enableMessageSync(c) {
-        onSnapshot(query(collection(db, "messages"), where("to_code", "==", c)), snap => {
+        onSnapshot(collection(db, "messages"), snap => {
             const d = document.getElementById('myMessagesArea');
             const badge = document.getElementById('msgBadge');
             
             d.innerHTML = "";
             
-            if(snap.empty) {
+            let msgs = [];
+            snap.forEach(x => {
+                let data = x.data();
+                if(data.to_code === c) {
+                    data.id = x.id;
+                    msgs.push(data);
+                }
+            });
+            
+            if(msgs.length === 0) {
                 d.innerHTML = "<p style='text-align:center; color:#888;'>Your inbox is empty.</p>";
                 if(badge) badge.style.display = 'none';
                 return;
             }
-            
-            let msgs = [];
-            snap.forEach(x => {
-                let data = x.data();
-                data.id = x.id;
-                msgs.push(data);
-            });
             
             if(badge) {
                 badge.innerText = msgs.length;
