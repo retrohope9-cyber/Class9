@@ -186,8 +186,17 @@
             </div>
             
             <div class="item-btn" style="background: rgba(255, 170, 0, 0.1); border-color: #ffaa00; color: #ffaa00;" onclick="window.openWantedBoard()">🎯 WANTED BOARD</div>
+            
+            <div class="item-btn" style="background: rgba(10, 255, 10, 0.1); border-color: #0aff0a; color: #0aff0a;" onclick="window.openTestsPage()">📝 PRACTICE QUESTIONS FOR TESTS</div>
         </div>
         <p style="color:#333; font-size:0.7rem; margin-top:30px; letter-spacing:1px;">POWERED BY RETROSPECTIVE</p>
+    </div>
+
+    <div id="testsPage" class="page">
+        <div class="back-btn" onclick="window.navigateTo('homePage')">← BACK</div>
+        <h1 style="color: #0aff0a;">PRACTICE QUESTIONS FOR TESTS</h1>
+        <p style="text-align:center; font-size:0.8rem; color:#888; margin-top:-10px; margin-bottom:20px;">Active tests unlocked by Admin.</p>
+        <div class="grid" id="activeTestsGrid"></div>
     </div>
 
     <div id="inboxPage" class="page">
@@ -226,16 +235,34 @@
         
         <div class="glass-box">
             <h2 style="font-size: 1rem; color: #fff; margin-top:0;">UPLOAD NEW FOLDER</h2>
-            <select id="pSub">
+            
+            <select id="pSub" onchange="window.toggleTestInputs(this.value)">
                 <option>BOOKS</option>
                 <option>History</option><option>Geography</option><option>Civics</option>
                 <option>Economics</option><option>INFORMATION TECHNOLOGY</option>
                 <option>PHYSICS</option><option>CHEMISTRY</option><option>BIOLOGY</option>
                 <option>हिंदी व्याकरण</option><option>हिंदी</option>
                 <option>Eng Lang</option><option>Eng Lit</option><option>Maths</option>
+                <option id="testOpt" style="color:#0aff0a; font-weight:bold; display:none;">PRACTICE QUESTIONS FOR TESTS</option>
             </select>
             
             <input type="text" id="pChap" placeholder="Chapter Name (e.g. Ch-1)">
+            
+            <div id="testInputs" style="display:none; flex-direction:column; gap:5px; margin: 8px 0;">
+                <input type="text" id="pTestSubj" placeholder="Test Subject (e.g. Science)">
+                <select id="pChapTest" style="width:100%; padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:#000; color:#fff; font-family:inherit; box-sizing:border-box;">
+                    <option>Assessment Test - Set 1</option>
+                    <option>Assessment Test - Set 2</option>
+                    <option>Assessment Test - Set 3</option>
+                    <option>Unit Test - Set 1</option>
+                    <option>Unit Test - Set 2</option>
+                    <option>Unit Test - Set 3</option>
+                    <option>Exam - Set 1</option>
+                    <option>Exam - Set 2</option>
+                    <option>Exam - Set 3</option>
+                </select>
+            </div>
+
             <p style="font-size:0.8rem; color:#aaa; margin:5px 0 0 0;">Select images OR a PDF file.</p>
             <input type="file" id="imgInp" accept="image/*,application/pdf" multiple>
             <button class="submit-btn" id="upBtn" onclick="window.uploadNote()">UPLOAD TO SERVER</button>
@@ -267,6 +294,14 @@
     <div id="adminPage" class="page">
         <div class="back-btn" onclick="window.navigateTo('homePage')">← CLOSE</div>
         <h1 style="color: #ff4d4d; text-shadow: 0 0 10px red;">GOD MODE</h1>
+
+        <div class="glass-box" style="border-color: #0aff0a; background:rgba(10,255,10,0.05);">
+            <h2 style="font-size: 1rem; color: #0aff0a; margin-top:0;">TEST VAULT MANAGER</h2>
+            <p style="font-size:0.75rem; color:#aaa; margin-top:-5px;">Dynamically unlocks tests that you have uploaded for the students.</p>
+            <div id="adminTestToggles" style="display:flex; flex-direction:column; gap:5px; font-size:0.8rem; color:#ddd; margin-bottom:15px; max-height:200px; overflow-y:auto;">
+                </div>
+            <button class="submit-btn" id="adminTestBtn" style="background:#0aff0a; color:#000;" onclick="window.updateTests()">SAVE UNLOCKS</button>
+        </div>
         
         <div class="glass-box" style="border-color: #ffaa00; background:rgba(255,170,0,0.05);">
             <h2 style="font-size: 1rem; color: #ffaa00; margin-top:0;">SYSTEM SECURITY</h2>
@@ -357,7 +392,7 @@
     let app, db;
     try { app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e) { alert("Connection Error"); }
 
-    // DUAL API ENGINE IMPLEMENTATION
+    // DUAL API ENGINE IMPLEMENTATION WITH 30-SEC KILLSWITCH
     const IMGBB_APIS = ["64bfef66d1b1c3bd428a0de56d96aff3", "d74504c4ba97dcbf58a8512e96675d2b"];
     let activeApiIdx = 0;
 
@@ -366,17 +401,29 @@
             let fd = new FormData();
             fd.append("image", fileData);
             try {
-                let res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_APIS[activeApiIdx]}`, {method:"POST", body:fd});
+                // 30 SECOND HANG KILLSWITCH
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); 
+                
+                let res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_APIS[activeApiIdx]}`, {
+                    method:"POST", 
+                    body:fd,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
                 let j = await res.json();
                 if(j && j.data && j.data.url) return j.data.url;
                 
                 console.warn("API Limit reached. Switching to Backup API...");
                 activeApiIdx = (activeApiIdx + 1) % IMGBB_APIS.length;
             } catch(e) {
+                console.warn("API Error or 30-Second Timeout! Switching to Backup API...");
                 activeApiIdx = (activeApiIdx + 1) % IMGBB_APIS.length;
             }
         }
-        alert("SYSTEM OVERLOAD: Both Image Servers are currently busy. Try again later.");
+        alert("SYSTEM OVERLOAD: Both Image Servers are busy or timing out. Try again later.");
         throw new Error("APIs exhausted");
     }
 
@@ -384,7 +431,7 @@
     if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
     let currentVault = null;
-    let messageSync, wantedSync, feedSync, adminFeedSync, chatUnsubAdmin, chatUnsubStudent, communitySync;
+    let messageSync, wantedSync, feedSync, adminFeedSync, chatUnsubAdmin, chatUnsubStudent, communitySync, dynamicTestsSync;
     let selSub, selChap;
     let activeCommentListeners = [];
     window.loadedAlbums = {}; 
@@ -396,11 +443,12 @@
     window.vaTargetName = null;
     window.vaTimer = null;
     window.pmTargetCode = null;
+    window.activeTests = [];
     
     // Explicit global state for Telemetry
     window.currentActivity = "Logging In...";
 
-    // --- SYSTEM SECRETS ---
+    // --- SYSTEM SECRETS & TEST CONFIG ---
     window.systemPosterCode = "@777"; 
     onSnapshot(doc(db, "system", "config"), (d) => {
         if(d.exists() && d.data().poster_code) {
@@ -410,12 +458,46 @@
         }
     });
 
+    onSnapshot(doc(db, "system", "tests"), (d) => {
+        if(d.exists() && d.data().active) {
+            window.activeTests = d.data().active;
+        } else {
+            window.activeTests = [];
+        }
+        document.querySelectorAll('.test-toggle').forEach(cb => {
+            cb.checked = window.activeTests.includes(cb.value);
+        });
+    });
+
     window.updatePosterCode = async () => {
         const nc = document.getElementById('adminNewPosterCode').value.trim();
         if(!nc) return;
         await setDoc(doc(db, "system", "config"), { poster_code: nc }, { merge: true });
         document.getElementById('adminNewPosterCode').value = "";
         alert("SYSTEM SECURITY UPDATED.");
+    };
+
+    window.updateTests = async () => {
+        const btn = document.getElementById('adminTestBtn');
+        btn.innerText = "SAVING..."; btn.disabled = true;
+        let active = [];
+        document.querySelectorAll('.test-toggle').forEach(cb => {
+            if(cb.checked) active.push(cb.value);
+        });
+        await setDoc(doc(db, "system", "tests"), { active: active }, { merge: true });
+        alert("Test Vault Updated!");
+        btn.innerText = "SAVE UNLOCKS"; btn.disabled = false;
+    };
+
+    // UI Toggle for Dropdowns
+    window.toggleTestInputs = (val) => {
+        if(val === 'PRACTICE QUESTIONS FOR TESTS') {
+            document.getElementById('pChap').style.display = 'none';
+            document.getElementById('testInputs').style.display = 'flex';
+        } else {
+            document.getElementById('pChap').style.display = 'block';
+            document.getElementById('testInputs').style.display = 'none';
+        }
     };
 
     // --- BULLETPROOF TELEMETRY & PRESENCE ---
@@ -449,6 +531,7 @@
         else if(id === 'gatePage') newAct = "Logging In...";
         else if(id === 'registerPage') newAct = "Creating Account";
         else if(id === 'inboxPage') newAct = "Checking Personal Inbox";
+        else if(id === 'testsPage') newAct = "Viewing Practice Tests";
         
         window.setActivity(newAct);
 
@@ -493,6 +576,10 @@
                 document.getElementById('userDisplay').innerText = currentVault.name;
                 document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
                 
+                if(currentVault.code === "777") {
+                    document.getElementById('testOpt').style.display = 'block';
+                }
+
                 enableMessageSync(currentVault.code);
                 enableGlobalSync(currentVault.code);
                 enableFeedSync();
@@ -547,6 +634,32 @@
         } else {
             alert("ACCESS DENIED: Incorrect Code.");
         }
+    };
+
+    // --- PRACTICE TESTS VIEWER ---
+    window.openTestsPage = () => {
+        window.navigateTo('testsPage');
+        const g = document.getElementById('activeTestsGrid');
+        g.innerHTML = "";
+        
+        if(!window.activeTests || window.activeTests.length === 0) {
+            g.innerHTML = "<p style='color:#888; text-align:center; width:100%; grid-column: 1 / -1;'>No tests are currently unlocked by Admin.</p>";
+            return;
+        }
+        
+        window.activeTests.forEach(t => {
+            const b = document.createElement('div');
+            b.className = 'item-btn';
+            b.innerText = t;
+            b.style.borderColor = "#0aff0a";
+            b.style.color = "#0aff0a";
+            b.style.background = "rgba(10, 255, 10, 0.1)";
+            b.onclick = () => {
+                selSub = "PRACTICE QUESTIONS FOR TESTS";
+                loadPosters(t);
+            };
+            g.appendChild(b);
+        });
     };
 
     // --- VICE ADMIN LOGIC ---
@@ -664,7 +777,7 @@
             overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
         }
 
-      document.getElementById('vaFeedInput').value = ""; document.getElementById('vaFeedImg').value = "";
+        document.getElementById('vaFeedInput').value = ""; document.getElementById('vaFeedImg').value = "";
         btn.innerText = "SEND"; btn.disabled = false;
         alert("Sent to Inbox!");
     };
@@ -956,12 +1069,27 @@
     };
     window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
 
-    // --- UPLOAD ENGINE (WITH LIVE COUNTER & DUAL API FIXES) ---
+    // --- UPLOAD ENGINE (WITH LIVE COUNTER & SET BUILDER) ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
-        const chap = document.getElementById('pChap').value.trim();
+        let chap = "";
+        
+        if (sub === "PRACTICE QUESTIONS FOR TESTS") {
+            const tSubj = document.getElementById('pTestSubj').value.trim();
+            const tSet = document.getElementById('pChapTest').value;
+            if(!tSubj) return alert("Please enter the Test Subject (e.g. Science)");
+            chap = `${tSubj} : ${tSet}`;
+        } else {
+            chap = document.getElementById('pChap').value.trim();
+        }
+        
         const files = document.getElementById('imgInp').files;
         if(!chap || !files.length) return alert("Select File & Chapter");
+        
+        // HARD ADMIN LOCK FOR TESTS
+        if(sub === "PRACTICE QUESTIONS FOR TESTS" && currentVault.code !== "777") {
+            return alert("ACCESS DENIED: Only Admin (ID: 777) can upload Practice Questions.");
+        }
         
         const btn = document.getElementById('upBtn');
         btn.innerText = "INITIALIZING SYSTEM..."; btn.disabled = true;
@@ -1040,22 +1168,23 @@
             await updateDoc(doc(db, "all_notes", existingDocId), { urls: mergedUrls });
         } else {
             let dName = currentVault.name;
-            if(currentVault.code === window.systemPosterCode) dName = "Retro Hope"; 
+            if(currentVault.code === window.systemPosterCode || currentVault.code === "777") dName = "Retro Hope"; 
             
             await addDoc(collection(db, "all_notes"), {
                 author: currentVault.name, vault_code: currentVault.code,
                 display_author: dName, 
-                subject: sub, chapter: chap, urls: newUrls
+                subject: sub, chapter: chap, urls: newUrls, timestamp: Date.now()
             });
         }
 
         alert(`Successfully Added to Folder!`); 
         btn.innerText = "UPLOAD TO SERVER"; btn.disabled = false;
         document.getElementById('pChap').value = "";
+        document.getElementById('pTestSubj').value = "";
         document.getElementById('imgInp').value = "";
     };
 
-    // --- FOLDER EDITING & ADDING PAGES (WITH LIVE COUNTER & DUAL API FIXES) ---
+    // --- FOLDER EDITING & ADDING PAGES (WITH LIVE COUNTER FIXES) ---
     window.editFolderName = async (id, oldSub, oldChap) => {
         let newSub = prompt("Enter new Subject:", oldSub);
         if(newSub === null) return;
@@ -1203,9 +1332,11 @@
         window.setActivity(`Browsing Subject: ${s}`);
         window.navigateTo('chapterPage');
         
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", s)));
+        const snap = await getDocs(collection(db, "all_notes"));
         const chaps = new Set(); 
-        snap.forEach(d => { if(d.data().chapter) chaps.add(d.data().chapter); });
+        snap.forEach(d => { 
+            if(d.data().subject === s && d.data().chapter) chaps.add(d.data().chapter); 
+        });
         
         const g = document.getElementById('chapGrid'); g.innerHTML = "";
         if(chaps.size === 0) { g.innerHTML = "<p style='color:#888; text-align:center;'>No folders found.</p>"; return; }
@@ -1228,12 +1359,15 @@
         window.setActivity(`Viewing: ${c}`);
         window.navigateTo('posterListPage');
         
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", selSub)));
+        const snap = await getDocs(collection(db, "all_notes"));
         const users = new Map();
         snap.forEach(d => {
             const data = d.data();
-            if(data.chapter === c) {
-                const vCode = data.vault_code || data.author || "Legacy";
+            if(data.subject === selSub && data.chapter === c) {
+                let vCode = data.vault_code;
+                if(!vCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) vCode = "777";
+                if(!vCode) vCode = "Legacy";
+                
                 const vName = data.display_author || data.author || "Unknown User";
                 users.set(vCode, vName);
             }
@@ -1247,6 +1381,10 @@
                 b.style.borderColor = "#ffaa00";
                 b.style.color = "#ffaa00";
                 b.style.background = "rgba(255, 170, 0, 0.1)";
+            } else if (selSub === "PRACTICE QUESTIONS FOR TESTS") {
+                b.style.borderColor = "#0aff0a";
+                b.style.color = "#0aff0a";
+                b.style.background = "rgba(10, 255, 10, 0.1)";
             }
             
             b.onclick = () => loadGallery(n, code); g.appendChild(b);
@@ -1260,12 +1398,19 @@
         area.innerHTML = "Opening...";
 
         try {
-            const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
+            const snap = await getDocs(collection(db, "all_notes"));
             
-            const headerColor = selSub === "BOOKS" ? "#ffaa00" : "var(--neon-blue)";
-            const headerIcon = selSub === "BOOKS" ? "📖" : "📚";
+            let headerColor = "var(--neon-blue)";
+            let headerIcon = "📚";
+            let displayTitle = "NOTES";
             
-            document.getElementById('galleryTitle').innerText = selSub === "BOOKS" ? "LIBRARY" : "NOTES";
+            if(selSub === "BOOKS") {
+                headerColor = "#ffaa00"; headerIcon = "📖"; displayTitle = "LIBRARY";
+            } else if (selSub === "PRACTICE QUESTIONS FOR TESTS") {
+                headerColor = "#0aff0a"; headerIcon = "📝"; displayTitle = "TEST PAPER";
+            }
+            
+            document.getElementById('galleryTitle').innerText = displayTitle;
             document.getElementById('galleryTitle').style.color = headerColor;
             
             area.innerHTML = `
@@ -1280,8 +1425,11 @@
 
             snap.forEach(d => {
                 const data = d.data();
+                let dCode = data.vault_code;
+                if(!dCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) dCode = "777";
                 
-                if(data.subject !== selSub || data.chapter !== selChap) return;
+                // PURE JS FILTERING: Checks Vault Code, Subject, and Chapter matches exactly
+                if(dCode !== code || data.subject !== selSub || data.chapter !== selChap) return;
 
                 if(!data.urls || data.urls.length === 0) return; 
 
@@ -1295,9 +1443,13 @@
                         <button id="txt_${d.id}" style="background:transparent; border:none; color:${headerColor}; font-size:0.85rem; font-weight:bold; cursor:pointer; width:100%;" onclick="window.jumpPage('${d.id}')">PAGE 1 OF ${data.urls.length} (TAP TO JUMP)</button>
                     </div>`;
                 }
+                
+                let cardBorder = "rgba(255,255,255,0.1)";
+                if(selSub === "BOOKS") cardBorder = "#ffaa00";
+                if(selSub === "PRACTICE QUESTIONS FOR TESTS") cardBorder = "#0aff0a";
 
                 area.innerHTML += `
-                <div class="note-card" style="border-color:${selSub === "BOOKS" ? "#ffaa00" : "rgba(255,255,255,0.1)"};">
+                <div class="note-card" style="border-color:${cardBorder};">
                     <img id="img_${d.id}" src="${data.urls[0]}" data-idx="0">
                     <button style="width:100%; background:rgba(255,255,255,0.1); color:#fff; border:1px solid ${headerColor}; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.openZoom('${d.id}')">🔍 FULLSCREEN READER</button>
                     
@@ -1378,7 +1530,7 @@
         } else { alert("Invalid page number."); }
     };
 
-    // --- ADMIN RADAR ---
+    // --- DYNAMIC ADMIN RADAR (WITH AUTO TEST-GENERATOR) ---
     window.loadAdminDashboard = async () => {
         const list = document.getElementById('adminList'); 
         
@@ -1411,6 +1563,27 @@
                         <button onclick="window.delAdminFeed('${data.id}')" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:4px 8px; cursor:pointer; border-radius:3px;">DEL</button>
                     </div>
                 </div>`;
+            });
+        });
+
+        // AUTO-GENERATOR FOR TEST VAULT
+        if(window.dynamicTestsSync) window.dynamicTestsSync();
+        window.dynamicTestsSync = onSnapshot(collection(db, "all_notes"), snap => {
+            const box = document.getElementById('adminTestToggles');
+            const testNames = new Set();
+            snap.forEach(d => { if(d.data().subject === "PRACTICE QUESTIONS FOR TESTS" && d.data().chapter) testNames.add(d.data().chapter); });
+            
+            box.innerHTML = "";
+            if(testNames.size === 0) {
+                box.innerHTML = "<i style='color:#666;'>No tests uploaded yet. Select 'PRACTICE QUESTIONS FOR TESTS' from the Vault upload menu to begin.</i>";
+                return;
+            }
+            
+            testNames.forEach(t => {
+                const isChecked = window.activeTests.includes(t) ? "checked" : "";
+                box.innerHTML += `<label style="display:flex; align-items:center; gap:8px; margin-bottom:5px; cursor:pointer;">
+                    <input type="checkbox" class="test-toggle" value="${t}" ${isChecked} style="width:18px; height:18px; margin:0; cursor:pointer;"> ${t}
+                </label>`;
             });
         });
     };
@@ -1454,6 +1627,9 @@
         const list = document.getElementById('adminList');
         if(!window.latestVaults) return;
         
+        // SORT ENGINE: Orders by last active, pushing online students to top
+        window.latestVaults.sort((a, b) => (b.last_active || 0) - (a.last_active || 0));
+
         let newHtml = "";
         window.latestVaults.forEach(u => {
             const diff = Date.now() - (u.last_active || 0);
@@ -1502,8 +1678,14 @@
 
     window.adminViewPosts = async (code) => {
         const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Scanning...";
-        const snap = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
-        div.innerHTML = `Folders: ${snap.size}`;
+        const snap = await getDocs(collection(db, "all_notes"));
+        let count = 0;
+        snap.forEach(d => { 
+            let vCode = d.data().vault_code;
+            if(!vCode && (d.data().author === "Retro Hope" || d.data().display_author === "Retro Hope")) vCode = "777";
+            if(vCode === code) count++; 
+        });
+        div.innerHTML = `Folders: ${count}`;
     };
 
     window.adminSpyInbox = async (code) => {
@@ -1521,11 +1703,16 @@
         if(prompt(`Type PURGE to wipe ${name}:`) !== "PURGE") return;
         await deleteDoc(doc(db, "vaults", code));
         
-        const notes = await getDocs(query(collection(db, "all_notes"), where("vault_code", "==", code)));
+        const notes = await getDocs(collection(db, "all_notes"));
         notes.forEach(async n => {
-            const comms = await getDocs(query(collection(db, "comments"), where("note_id", "==", n.id)));
-            comms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
-            await deleteDoc(doc(db, "all_notes", n.id));
+            let vCode = n.data().vault_code;
+            if(!vCode && (n.data().author === "Retro Hope" || n.data().display_author === "Retro Hope")) vCode = "777";
+            
+            if(vCode === code) {
+                const comms = await getDocs(query(collection(db, "comments"), where("note_id", "==", n.id)));
+                comms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
+                await deleteDoc(doc(db, "all_notes", n.id));
+            }
         });
         const msgs = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
         msgs.forEach(async m => await deleteDoc(doc(db, "messages", m.id)));
@@ -1539,24 +1726,53 @@
         alert("User Wiped.");
     };
 
-    // --- GENERAL SYNC HELPERS ---
+    // --- GENERAL SYNC HELPERS (LEGACY RESTORER INCLUDED) ---
     function enableGlobalSync(c) {
-        onSnapshot(query(collection(db, "all_notes"), where("vault_code", "==", c)), snap => {
+        onSnapshot(collection(db, "all_notes"), snap => {
             const a = document.getElementById('myUploadsArea'); a.innerHTML = "";
+            let myFolders = [];
+            
             snap.forEach(d => {
                 const data = d.data();
+                let vCode = data.vault_code;
                 
+                // Legacy Data Restorer for Admin
+                if(!vCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) {
+                    vCode = "777";
+                }
+                
+                // Strict JS Filter ensuring ONLY this ID sees its own files
+                if(vCode === c) {
+                    data.id = d.id;
+                    myFolders.push(data);
+                }
+            });
+
+            myFolders.sort((x, y) => (y.timestamp || 0) - (x.timestamp || 0));
+
+            if(myFolders.length === 0) {
+                a.innerHTML = "<p style='color:#888; text-align:center; font-size:0.8rem;'>You haven't uploaded anything yet.</p>";
+                return;
+            }
+
+            myFolders.forEach(data => {
+                let displaySub = data.subject || 'Legacy';
+                let displayChap = data.chapter || 'Untitled';
+                if (data.subject === "PRACTICE QUESTIONS FOR TESTS") {
+                    displaySub = `<span style="color:#0aff0a;">📝 PRACTICE QUESTIONS FOR TESTS</span>`;
+                }
+
                 a.innerHTML += `
                 <div class="glass-box" style="padding:15px; margin-bottom:10px; border-color:rgba(255,255,255,0.1);">
-                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">${data.subject || 'Legacy'}</div>
-                    <div style="color:#aaa; font-size:0.9rem;">${data.chapter || 'Untitled'} • ${data.urls ? data.urls.length : 0} Pages</div>
+                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">${displaySub}</div>
+                    <div style="color:#aaa; font-size:0.9rem;">${displayChap} • ${data.urls ? data.urls.length : 0} Pages</div>
                     
                     <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;">
-                        <button onclick="window.editFolderName('${d.id}', '${data.subject || ''}', '${data.chapter || ''}')" style="flex:1; background:#444; color:#fff; border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:0.7rem;">RENAME</button>
+                        <button onclick="window.editFolderName('${data.id}', '${data.subject || ''}', '${data.chapter || ''}')" style="flex:1; background:#444; color:#fff; border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:0.7rem;">RENAME</button>
                     </div>
                     <div style="display:flex; gap:5px; margin-top:5px;">
-                        <button onclick="window.editFolder('${d.id}')" style="flex:1; background:var(--neon-blue); color:#000; border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:0.7rem;">PAGES</button>
-                        <button onclick="window.delNote('${d.id}')" style="flex:1; background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:8px; border-radius:5px; cursor:pointer; font-size:0.7rem;">DELETE</button>
+                        <button onclick="window.editFolder('${data.id}')" style="flex:1; background:var(--neon-blue); color:#000; border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:0.7rem;">PAGES</button>
+                        <button onclick="window.delNote('${data.id}')" style="flex:1; background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:8px; border-radius:5px; cursor:pointer; font-size:0.7rem;">DELETE</button>
                     </div>
                 </div>`;
             });
