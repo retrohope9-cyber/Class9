@@ -24,6 +24,7 @@
         input, select, button, textarea { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: #000; color: #fff; font-family: inherit; box-sizing: border-box; }
         .submit-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); border: none; font-weight: bold; cursor: pointer;}
         .note-card { background: var(--glass); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin-bottom: 20px; box-sizing: border-box; }
+        .note-card img { width: 100%; border-radius: 10px; border: 1px solid var(--neon-purple); margin-bottom: 10px; }
         .back-btn { align-self: flex-start; margin-bottom: 15px; color: var(--neon-blue); font-weight: bold; cursor: pointer; z-index: 50; }
         
         .notice-board { width: 100%; max-width: 400px; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box;}
@@ -47,18 +48,6 @@
     </style>
 </head>
 <body>
-
-<div id="authModal" class="modal-overlay">
-    <div class="glass-box" style="border-color: var(--neon-blue); padding: 25px; width:100%; max-width:350px;">
-        <h2 style="color:var(--neon-blue); margin-top:0; text-align:center; font-size: 1.2rem;">SYSTEM OVERRIDE</h2>
-        <p style="color:#aaa; text-align:center; font-size:0.8rem; margin-top:-10px;">Enter your Poster or Admin Authorization Code to proceed.</p>
-        <input type="password" id="authCodeInput" placeholder="Enter Authorization Code...">
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="submit-btn" style="background:#444; flex:1;" onclick="document.getElementById('authModal').style.display='none'">CANCEL</button>
-            <button class="submit-btn" style="flex:1;" onclick="window.submitAuthCode()">VERIFY</button>
-        </div>
-    </div>
-</div>
 
 <div id="liveChatBox">
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:10px;">
@@ -263,6 +252,7 @@
                 <option>PHYSICS</option><option>CHEMISTRY</option><option>BIOLOGY</option>
                 <option>हिंदी व्याकरण</option><option>हिंदी</option>
                 <option>Eng Lang</option><option>Eng Lit</option><option>Maths</option>
+                <option id="testOpt" style="color:#0aff0a; font-weight:bold; display:none;">PRACTICE QUESTIONS FOR TESTS</option>
                 <option id="hhwOpt" style="color:#ff00ff; font-weight:bold; display:none;">HOLIDAY HOMEWORK (HHW)</option>
             </select>
             
@@ -311,7 +301,7 @@
         
         <div class="glass-box" style="border-color: var(--neon-blue); padding:15px; margin-bottom:15px; width:100%; max-width:400px;">
             <h2 style="font-size: 1rem; color: var(--neon-blue); margin-top:0; text-align:center;">➕ ADD NEW PAGES</h2>
-            <p style="font-size:0.75rem; color:#888; text-align:center; margin-top:-5px;">Add new homework images directly to this existing folder.</p>
+            <p style="font-size:0.75rem; color:#888; text-align:center; margin-top:-5px;">Add new homework or notes directly to this existing folder.</p>
             <input type="file" id="addPagesInp" accept="image/*,application/pdf" multiple style="margin-bottom:10px;">
             <button class="submit-btn" id="addPagesBtn" onclick="window.addPagesToFolder()">UPLOAD & ADD TO FOLDER</button>
         </div>
@@ -433,7 +423,7 @@
     };
 
     let app, db;
-    try { app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e) { alert("Connection Error"); }
+    try { app = initializeApp(firebaseConfig); db = getFirestore(app); } catch(e) { alert("Firebase Init Error: " + e.message); }
 
     const IMGBB_APIS = ["965fa1c8fd25314c86fc7e40d845a83a", "64bfef66d1b1c3bd428a0de56d96aff3", "d74504c4ba97dcbf58a8512e96675d2b"];
     let activeApiIdx = 0;
@@ -607,7 +597,6 @@
         else if(id === 'subjectPage') newAct = "Browsing Subjects";
         else if(id === 'adminPage') newAct = "God Mode (Admin)";
         else if(id === 'viceAdminPage') newAct = "Vice Admin Panel";
-        else if(id === 'viceAdminPage') newAct = "Vice Admin Panel";
         else if(id === 'gatePage') newAct = "Logging In...";
         else if(id === 'registerPage') newAct = "Creating Account";
         else if(id === 'inboxPage') newAct = "Checking Personal Inbox";
@@ -621,7 +610,7 @@
             activeCommentListeners = [];
         }
     };
-    
+
     window.navigateTo = (id) => { history.pushState({page: id}, "", "#" + id); window.showPage(id); };
     window.addEventListener('popstate', (e) => {
         if(e.state && e.state.page) { window.showPage(e.state.page); } else { window.showPage('gatePage'); }
@@ -677,34 +666,29 @@
         const code = document.getElementById('rCode').value.trim();
         const pass = document.getElementById('rPass').value.trim();
         if(code.length === 3 && name && pass) {
-            const check = await getDoc(doc(db, "vaults", code));
-            if(check.exists()) return alert("Code Taken");
-            
-            window.currentActivity = "Home Page";
-            await setDoc(doc(db, "vaults", code), { name, pass, code, last_active: Date.now(), activity: window.currentActivity });
-            
-            currentVault = { name, pass, code };
-            document.getElementById('userDisplay').innerText = currentVault.name;
-            document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
-            
-            enableMessageSync(currentVault.code);
-            enableGlobalSync(currentVault.code);
-            enableFeedSync();
-            startLiveChatListener();
-            window.navigateTo('homePage');
-
+            try {
+                const check = await getDoc(doc(db, "vaults", code));
+                if(check.exists()) return alert("Code Taken");
+                
+                window.currentActivity = "Home Page";
+                await setDoc(doc(db, "vaults", code), { name, pass, code, last_active: Date.now(), activity: window.currentActivity });
+                
+                currentVault = { name, pass, code };
+                document.getElementById('userDisplay').innerText = currentVault.name;
+                document.getElementById('userTitle').innerText = "Vault: " + currentVault.name;
+                
+                enableMessageSync(currentVault.code);
+                enableGlobalSync(currentVault.code);
+                enableFeedSync();
+                startLiveChatListener();
+                window.navigateTo('homePage');
+            } catch(e) { alert("Registration Error: " + e.message); }
         } else { alert("Invalid inputs. Ensure 3-digit code."); }
     };
 
+    // --- REVERTED TO NATIVE PROMPT BOX AS REQUESTED ---
     window.startVaultFlow = () => {
-        document.getElementById('authCodeInput').value = "";
-        document.getElementById('authModal').style.display = 'flex';
-    };
-
-    window.submitAuthCode = () => {
-        const auth = document.getElementById('authCodeInput').value;
-        document.getElementById('authModal').style.display = 'none';
-        
+        const auth = prompt("ENTER AUTHORIZATION CODE:");
         if(!auth) return;
         
         if(auth === "@Retrospective2026") {
@@ -754,39 +738,43 @@
         const g = document.getElementById('activeHHWGrid');
         g.innerHTML = "<p style='text-align:center; width:100%; color:#888;'>Loading...</p>";
         
-        const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", "HOLIDAY HOMEWORK (HHW)")));
-        const chaps = new Set();
-        snap.forEach(d => { if(d.data().chapter) chaps.add(d.data().chapter); });
-        
-        g.innerHTML = "";
-        if(chaps.size === 0) {
-            g.innerHTML = "<p style='color:#888; text-align:center; width:100%; grid-column: 1 / -1;'>No holiday homework posted yet.</p>";
-            return;
-        }
-        
-        chaps.forEach(c => {
-            const b = document.createElement('div');
-            b.className = 'item-btn';
-            b.innerText = c;
-            b.style.borderColor = "#ff00ff";
-            b.style.color = "#ff00ff";
-            b.style.background = "rgba(255, 0, 255, 0.1)";
-            b.onclick = () => {
-                selSub = "HOLIDAY HOMEWORK (HHW)";
-                loadPosters(c);
-            };
-            g.appendChild(b);
-        });
+        try {
+            const snap = await getDocs(query(collection(db, "all_notes"), where("subject", "==", "HOLIDAY HOMEWORK (HHW)")));
+            const chaps = new Set();
+            snap.forEach(d => { if(d.data().chapter) chaps.add(d.data().chapter); });
+            
+            g.innerHTML = "";
+            if(chaps.size === 0) {
+                g.innerHTML = "<p style='color:#888; text-align:center; width:100%; grid-column: 1 / -1;'>No holiday homework posted yet.</p>";
+                return;
+            }
+            
+            chaps.forEach(c => {
+                const b = document.createElement('div');
+                b.className = 'item-btn';
+                b.innerText = c;
+                b.style.borderColor = "#ff00ff";
+                b.style.color = "#ff00ff";
+                b.style.background = "rgba(255, 0, 255, 0.1)";
+                b.onclick = () => {
+                    selSub = "HOLIDAY HOMEWORK (HHW)";
+                    loadPosters(c);
+                };
+                g.appendChild(b);
+            });
+        } catch (e) { alert("Error loading HHW: " + e.message); }
     };
 
     window.openVAModal = (code, name) => {
         window.vaTargetCode = code;
         window.vaTargetName = name;
         document.getElementById('vaModalName').innerText = `Target: ${name}`;
+        
         document.getElementById('vaPowBroadcast').checked = false;
         document.getElementById('vaPowInbox').checked = false;
         document.getElementById('vaPowCommunity').checked = false;
         document.getElementById('vaTimeAmt').value = "";
+        
         document.getElementById('vaModal').style.display = 'flex';
     };
 
@@ -813,24 +801,28 @@
 
         let tempPass = "VA-" + Math.floor(1000 + Math.random() * 9000);
         
-        await updateDoc(doc(db, "vaults", window.vaTargetCode), {
-            vice_admin: { temp_pass: tempPass, expires_at: Date.now() + duration, powers: powers }
-        });
-        
-        document.getElementById('vaModal').style.display = 'none';
-        alert(`SUCCESS!\n\nGive ${window.vaTargetName} this code: ${tempPass}\nIt expires in ${amount} ${unit}.`);
+        try {
+            await updateDoc(doc(db, "vaults", window.vaTargetCode), {
+                vice_admin: { temp_pass: tempPass, expires_at: Date.now() + duration, powers: powers }
+            });
+            document.getElementById('vaModal').style.display = 'none';
+            alert(`SUCCESS!\n\nGive ${window.vaTargetName} this code: ${tempPass}\nIt expires in ${amount} ${unit}.`);
+        } catch(e) { alert("Error granting VA: " + e.message); }
     };
 
     window.revokeVA = async (code) => {
         if(!confirm("Revoke all Vice-Admin powers immediately?")) return;
-        await updateDoc(doc(db, "vaults", code), {
-            vice_admin: { temp_pass: "", expires_at: 0, powers: [] }
-        });
-        alert("Power Revoked.");
+        try {
+            await updateDoc(doc(db, "vaults", code), {
+                vice_admin: { temp_pass: "", expires_at: 0, powers: [] }
+            });
+            alert("Power Revoked.");
+        } catch(e) { alert("Error revoking VA: " + e.message); }
     };
 
     window.loadVADashboard = () => {
         const powers = currentVault.vice_admin.powers || [];
+        
         document.getElementById('vaBroadcastSec').style.display = powers.includes('broadcast') ? 'block' : 'none';
         document.getElementById('vaInboxSec').style.display = powers.includes('inbox') ? 'block' : 'none';
         document.getElementById('vaCommunitySec').style.display = powers.includes('community') ? 'block' : 'none';
@@ -860,10 +852,13 @@
 
         let imgUrl = "";
         if(file) {
-            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); btn.innerText = "BROADCAST TO HUB"; btn.disabled = false; return; }
         }
-        await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
-        alert("Broadcasted to Hub!"); btn.innerText = "BROADCAST TO HUB"; btn.disabled = false;
+        try {
+            await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
+            alert("Broadcasted to Hub!"); 
+        } catch(e) { alert("Broadcast Error: " + e.message); }
+        btn.innerText = "BROADCAST TO HUB"; btn.disabled = false;
         document.getElementById('vaNoticeInput').value = ""; document.getElementById('vaNoticeImg').value = "";
     };
 
@@ -876,24 +871,27 @@
 
         let imgUrl = "";
         if(file) {
-            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); btn.innerText = "SEND"; btn.disabled = false; return; }
         }
-        await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
+        try {
+            await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
 
-        const snap = await getDocs(collection(db, "admin_feed"));
-        let posts = [];
-        snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
-        posts.sort((a,b) => b.timestamp - a.timestamp);
+            const snap = await getDocs(collection(db, "admin_feed"));
+            let posts = [];
+            snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+            posts.sort((a,b) => b.timestamp - a.timestamp);
 
-        if(posts.length > 20) {
-            const overflow = posts.slice(20);
-            overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
-        }
+            if(posts.length > 20) {
+                const overflow = posts.slice(20);
+                overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
+            }
 
-        document.getElementById('vaFeedInput').value = ""; document.getElementById('vaFeedImg').value = "";
+            document.getElementById('vaFeedInput').value = ""; document.getElementById('vaFeedImg').value = "";
+            alert("Sent to Inbox!");
+        } catch(e) { alert("Feed Error: " + e.message); }
         btn.innerText = "SEND"; btn.disabled = false;
-        alert("Sent to Inbox!");
     };
+
 
     window.openCommunity = () => {
         window.navigateTo('communityPage');
@@ -944,36 +942,42 @@
         const t = document.getElementById('communityInput').value.trim();
         if(!t) return;
         document.getElementById('communityInput').value = ""; 
-        await addDoc(collection(db, "community_posts"), { author: currentVault.name, author_code: currentVault.code, text: t, timestamp: Date.now(), replies: [] });
-        
-        const snap = await getDocs(collection(db, "community_posts"));
-        let posts = [];
-        snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
-        posts.sort((a,b) => b.timestamp - a.timestamp);
+        try {
+            await addDoc(collection(db, "community_posts"), { author: currentVault.name, author_code: currentVault.code, text: t, timestamp: Date.now(), replies: [] });
+            
+            const snap = await getDocs(collection(db, "community_posts"));
+            let posts = [];
+            snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+            posts.sort((a,b) => b.timestamp - a.timestamp);
 
-        if(posts.length > 20) {
-            const overflow = posts.slice(20);
-            overflow.forEach(async (d) => await deleteDoc(doc(db, "community_posts", d.id)));
-        }
+            if(posts.length > 20) {
+                const overflow = posts.slice(20);
+                overflow.forEach(async (d) => await deleteDoc(doc(db, "community_posts", d.id)));
+            }
+        } catch(e) { alert("Post Error: " + e.message); }
     };
     
     window.replyCommunityPost = async (id, author) => {
         const txt = prompt(`Reply to ${author}:`);
         if(!txt) return;
-        const ref = doc(db, "community_posts", id);
-        const snap = await getDoc(ref);
-        if(snap.exists()) {
-            let reps = snap.data().replies || [];
-            reps.push({ author: currentVault.name, text: txt, timestamp: Date.now() });
-            await updateDoc(ref, { replies: reps });
-        }
+        try {
+            const ref = doc(db, "community_posts", id);
+            const snap = await getDoc(ref);
+            if(snap.exists()) {
+                let reps = snap.data().replies || [];
+                reps.push({ author: currentVault.name, text: txt, timestamp: Date.now() });
+                await updateDoc(ref, { replies: reps });
+            }
+        } catch(e) { alert("Reply Error: " + e.message); }
     };
     window.delCommunityPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "community_posts", id)); };
     window.clearCommunityHub = async () => {
         if(prompt("TYPE 'WIPE' TO DESTROY ALL COMMUNITY POSTS:") !== "WIPE") return;
-        const snap = await getDocs(collection(db, "community_posts"));
-        snap.forEach(async d => await deleteDoc(doc(db, "community_posts", d.id)));
-        alert("Community Hub has been completely wiped.");
+        try {
+            const snap = await getDocs(collection(db, "community_posts"));
+            snap.forEach(async d => await deleteDoc(doc(db, "community_posts", d.id)));
+            alert("Community Hub has been completely wiped.");
+        } catch(e) { alert("Wipe Error: " + e.message); }
     };
 
     function startLiveChatListener() {
@@ -1038,14 +1042,16 @@
     window.sendLiveChat = async () => {
         let txt = document.getElementById('liveChatInput').value.trim();
         if(!txt || !window.activeChatId) return;
-        const ref = doc(db, "live_chats", window.activeChatId);
-        const snap = await getDoc(ref);
-        if(snap.exists()) {
-            let msgs = snap.data().messages || [];
-            msgs.push({from: currentVault.name, text: txt});
-            await updateDoc(ref, {messages: msgs});
-            document.getElementById('liveChatInput').value = "";
-        }
+        try {
+            const ref = doc(db, "live_chats", window.activeChatId);
+            const snap = await getDoc(ref);
+            if(snap.exists()) {
+                let msgs = snap.data().messages || [];
+                msgs.push({from: currentVault.name, text: txt});
+                await updateDoc(ref, {messages: msgs});
+                document.getElementById('liveChatInput').value = "";
+            }
+        } catch(e) { alert("Chat Error: " + e.message); }
     };
     window.endChat = async () => {
         if(window.activeChatId) await deleteDoc(doc(db, "live_chats", window.activeChatId));
@@ -1062,10 +1068,12 @@
     });
 
     window.editCurrentBroadcast = async () => {
-        const snap = await getDoc(doc(db, "system", "notice"));
-        if(snap.exists() && snap.data().text) {
-            document.getElementById('adminNoticeInput').value = snap.data().text;
-        }
+        try {
+            const snap = await getDoc(doc(db, "system", "notice"));
+            if(snap.exists() && snap.data().text) {
+                document.getElementById('adminNoticeInput').value = snap.data().text;
+            }
+        } catch(e) { alert("Error: " + e.message); }
     };
 
     window.updateNotice = async () => {
@@ -1077,13 +1085,18 @@
 
         let imgUrl = "";
         if(file) {
-            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); btn.innerText = "BROADCAST"; btn.disabled = false; return; }
         } else {
-            const snap = await getDoc(doc(db, "system", "notice"));
-            if(snap.exists() && snap.data().img) imgUrl = snap.data().img;
+            try {
+                const snap = await getDoc(doc(db, "system", "notice"));
+                if(snap.exists() && snap.data().img) imgUrl = snap.data().img;
+            } catch(e) {}
         }
-        await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
-        alert("Broadcasted!"); btn.innerText = "BROADCAST"; btn.disabled = false;
+        try {
+            await setDoc(doc(db, "system", "notice"), { text: txt, img: imgUrl });
+            alert("Broadcasted!"); 
+        } catch(e) { alert("Broadcast Error: " + e.message); }
+        btn.innerText = "BROADCAST"; btn.disabled = false;
         document.getElementById('adminNoticeInput').value = ""; document.getElementById('adminNoticeImg').value = "";
     };
 
@@ -1114,31 +1127,33 @@
 
         let imgUrl = "";
         if(file) {
-            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); btn.innerText = "SEND"; btn.disabled = false; return; }
         }
-        await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
+        try {
+            await addDoc(collection(db, "admin_feed"), { text: t, img: imgUrl, timestamp: Date.now() });
 
-        const snap = await getDocs(collection(db, "admin_feed"));
-        let posts = [];
-        snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
-        posts.sort((a,b) => b.timestamp - a.timestamp);
+            const snap = await getDocs(collection(db, "admin_feed"));
+            let posts = [];
+            snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+            posts.sort((a,b) => b.timestamp - a.timestamp);
 
-        if(posts.length > 20) {
-            const overflow = posts.slice(20);
-            overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
-        }
+            if(posts.length > 20) {
+                const overflow = posts.slice(20);
+                overflow.forEach(async (d) => await deleteDoc(doc(db, "admin_feed", d.id)));
+            }
 
-        document.getElementById('adminFeedInput').value = ""; document.getElementById('adminFeedImg').value = "";
+            document.getElementById('adminFeedInput').value = ""; document.getElementById('adminFeedImg').value = "";
+        } catch(e) { alert("Feed Error: " + e.message); }
         btn.innerText = "SEND"; btn.disabled = false;
     };
     
     window.editAdminFeed = async (id, oldText) => {
         const newText = prompt("Edit message:", oldText);
         if(newText !== null && newText.trim() !== "") {
-            await updateDoc(doc(db, "admin_feed", id), { text: newText });
+            try { await updateDoc(doc(db, "admin_feed", id), { text: newText }); } catch(e) { alert("Edit Error: " + e.message); }
         }
     };
-    window.delAdminFeed = async (id) => { await deleteDoc(doc(db, "admin_feed", id)); };
+    window.delAdminFeed = async (id) => { try { await deleteDoc(doc(db, "admin_feed", id)); } catch(e) { alert("Delete Error: " + e.message); } };
 
     window.openWantedBoard = () => {
         window.navigateTo('wantedPage');
@@ -1160,23 +1175,24 @@
     window.postWantedRequest = async () => {
         const t = document.getElementById('reqInput').value;
         if(t) { 
-            await addDoc(collection(db, "wanted"), { author: currentVault.name, text: t, timestamp: Date.now() }); 
-            document.getElementById('reqInput').value = ""; 
-            
-            const snap = await getDocs(collection(db, "wanted"));
-            let posts = [];
-            snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
-            posts.sort((a,b) => b.timestamp - a.timestamp);
+            try {
+                await addDoc(collection(db, "wanted"), { author: currentVault.name, text: t, timestamp: Date.now() }); 
+                document.getElementById('reqInput').value = ""; 
+                
+                const snap = await getDocs(collection(db, "wanted"));
+                let posts = [];
+                snap.forEach(d => posts.push({id: d.id, timestamp: d.data().timestamp || 0}));
+                posts.sort((a,b) => b.timestamp - a.timestamp);
 
-            if(posts.length > 20) {
-                const overflow = posts.slice(20);
-                overflow.forEach(async (d) => await deleteDoc(doc(db, "wanted", d.id)));
-            }
+                if(posts.length > 20) {
+                    const overflow = posts.slice(20);
+                    overflow.forEach(async (d) => await deleteDoc(doc(db, "wanted", d.id)));
+                }
+            } catch(e) { alert("Request Error: " + e.message); }
         }
     };
-    window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) await deleteDoc(doc(db, "wanted", id)); };
+    window.resolveRequest = async (id) => { if(confirm("Mark fulfilled?")) { try { await deleteDoc(doc(db, "wanted", id)); } catch(e) { alert("Error: " + e.message); } } };
 
-    // --- UPLOAD ENGINE (TEXT + IMAGE COMBINED) ---
     window.uploadNote = async () => {
         const sub = document.getElementById('pSub').value;
         let chap = "";
@@ -1198,43 +1214,45 @@
 
         const btn = document.getElementById('upBtn');
 
-        // GET EXISTING DOC TO MERGE INTO
-        const snap = await getDocs(collection(db, "all_notes"));
         let existingDocId = null;
         let existingUrls = [];
         let existingText = "";
-        
-        snap.forEach(d => {
-            const data = d.data();
-            let vCode = data.vault_code;
-            if(!vCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) vCode = "777";
-            if(vCode === currentVault.code && data.subject === sub && data.chapter === chap) {
-                existingDocId = d.id;
-                existingUrls = data.urls || [];
-                existingText = data.text_content || "";
-            }
-        });
+
+        try {
+            const snap = await getDocs(collection(db, "all_notes"));
+            snap.forEach(d => {
+                const data = d.data();
+                let vCode = data.vault_code;
+                if(!vCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) vCode = "777";
+                if(vCode === currentVault.code && data.subject === sub && data.chapter === chap) {
+                    existingDocId = d.id;
+                    existingUrls = data.urls || [];
+                    existingText = data.text_content || "";
+                }
+            });
+        } catch(e) { alert("Database Error: " + e.message); return; }
 
         let dName = currentVault.name;
         if(currentVault.code === window.systemPosterCode || currentVault.code === "777") dName = "Retro Hope"; 
 
-        // TEXT UPLOAD LOGIC
         if(window.uploadMode === 'text') {
             const textVal = document.getElementById('textNoteInp').value.trim();
             if(!textVal) return alert("Please type some text to upload.");
             btn.innerText = "UPDATING SERVER..."; btn.disabled = true;
 
-            if(existingDocId) {
-                let mergedText = existingText ? existingText + "\n\n---\n\n" + textVal : textVal;
-                await updateDoc(doc(db, "all_notes", existingDocId), { text_content: mergedText });
-            } else {
-                await addDoc(collection(db, "all_notes"), {
-                    author: currentVault.name, vault_code: currentVault.code, display_author: dName, 
-                    subject: sub, chapter: chap, urls: [], text_content: textVal, timestamp: Date.now()
-                });
-            }
+            try {
+                if(existingDocId) {
+                    let mergedText = existingText ? existingText + "\n\n---\n\n" + textVal : textVal;
+                    await updateDoc(doc(db, "all_notes", existingDocId), { text_content: mergedText });
+                } else {
+                    await addDoc(collection(db, "all_notes"), {
+                        author: currentVault.name, vault_code: currentVault.code, display_author: dName, 
+                        subject: sub, chapter: chap, urls: [], text_content: textVal, timestamp: Date.now()
+                    });
+                }
+                alert(`Text Note Successfully Added!`); 
+            } catch(e) { alert("Upload Error: " + e.message); }
 
-            alert(`Text Note Successfully Added!`); 
             btn.innerText = "UPLOAD TO SERVER"; btn.disabled = false;
             document.getElementById('pChap').value = "";
             if(document.getElementById('pTestSubj')) document.getElementById('pTestSubj').value = "";
@@ -1242,7 +1260,6 @@
             return;
         }
 
-        // IMAGE/PDF UPLOAD LOGIC
         const files = document.getElementById('imgInp').files;
         if(!files.length) return alert("Select files to upload");
 
@@ -1287,17 +1304,19 @@
 
         btn.innerText = "UPDATING SERVER...";
 
-        if(existingDocId) {
-            const mergedUrls = [...existingUrls, ...newUrls];
-            await updateDoc(doc(db, "all_notes", existingDocId), { urls: mergedUrls });
-        } else {
-            await addDoc(collection(db, "all_notes"), {
-                author: currentVault.name, vault_code: currentVault.code, display_author: dName, 
-                subject: sub, chapter: chap, urls: newUrls, text_content: "", timestamp: Date.now()
-            });
-        }
+        try {
+            if(existingDocId) {
+                const mergedUrls = [...existingUrls, ...newUrls];
+                await updateDoc(doc(db, "all_notes", existingDocId), { urls: mergedUrls });
+            } else {
+                await addDoc(collection(db, "all_notes"), {
+                    author: currentVault.name, vault_code: currentVault.code, display_author: dName, 
+                    subject: sub, chapter: chap, urls: newUrls, text_content: "", timestamp: Date.now()
+                });
+            }
+            alert(`Successfully Added to Folder!`); 
+        } catch(e) { alert("Upload Error: " + e.message); }
 
-        alert(`Successfully Added to Folder!`); 
         btn.innerText = "UPLOAD TO SERVER"; btn.disabled = false;
         document.getElementById('pChap').value = "";
         if(document.getElementById('pTestSubj')) document.getElementById('pTestSubj').value = "";
@@ -1309,8 +1328,10 @@
         if(newSub === null) return;
         let newChap = prompt("Enter new Chapter Name:", oldChap);
         if(newChap === null) return;
-        await updateDoc(doc(db, "all_notes", id), { subject: newSub, chapter: newChap });
-        alert("Name updated!");
+        try {
+            await updateDoc(doc(db, "all_notes", id), { subject: newSub, chapter: newChap });
+            alert("Name updated!");
+        } catch(e) { alert("Error: " + e.message); }
     };
 
     window.editFolder = async (id) => {
@@ -1381,14 +1402,16 @@
         }
 
         btn.innerText = "APPENDING TO FOLDER...";
-        const docRef = doc(db, "all_notes", window.currentEditId);
-        const snap = await getDoc(docRef);
-        if(snap.exists()) {
-            const existingUrls = snap.data().urls || [];
-            await updateDoc(docRef, { urls: [...existingUrls, ...newUrls] });
-        }
+        try {
+            const docRef = doc(db, "all_notes", window.currentEditId);
+            const snap = await getDoc(docRef);
+            if(snap.exists()) {
+                const existingUrls = snap.data().urls || [];
+                await updateDoc(docRef, { urls: [...existingUrls, ...newUrls] });
+            }
+            alert("Pages Added!");
+        } catch(e) { alert("Error appending pages: " + e.message); }
 
-        alert("Pages Added!");
         btn.innerText = "UPLOAD & ADD TO FOLDER"; btn.disabled = false;
         document.getElementById('addPagesInp').value = "";
         window.renderFolderEdit(); 
@@ -1396,58 +1419,64 @@
 
     window.clearTextNote = async (id) => {
         if(!confirm("Erase all text notes in this folder?")) return;
-        await updateDoc(doc(db, "all_notes", id), { text_content: "" });
-        window.renderFolderEdit();
+        try {
+            await updateDoc(doc(db, "all_notes", id), { text_content: "" });
+            window.renderFolderEdit();
+        } catch(e) { alert("Error: " + e.message); }
     };
 
     window.renderFolderEdit = async () => {
         const area = document.getElementById('editFolderImages');
         area.innerHTML = "Fetching Pages...";
-        const snap = await getDoc(doc(db, "all_notes", window.currentEditId));
-        if(!snap.exists()) return window.navigateTo('dashboardPage');
-        
-        const data = snap.data();
-        document.getElementById('editFolderTitle').innerText = `📚 ${data.chapter}`;
-        area.innerHTML = "";
-        
-        if(data.text_content) {
-            area.innerHTML += `
-            <div class="glass-box" style="padding:15px; margin-bottom:15px; border-color:#ffaa00; width:100%; box-sizing:border-box;">
-                <span style="font-weight:bold; color:#ffaa00; display:block; margin-bottom:10px;">📝 Written Note Preview</span>
-                <div style="background:rgba(0,0,0,0.5); padding:10px; border-radius:5px; margin-bottom:10px; max-height:100px; overflow-y:auto; font-size:0.8rem; color:#ccc; white-space:pre-wrap;">${data.text_content}</div>
-                <button onclick="window.clearTextNote('${window.currentEditId}')" style="width:100%; background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:8px 12px; border-radius:5px; cursor:pointer; font-weight:bold;">DELETE TEXT</button>
-            </div>`;
-        }
-
-        if(data.urls && data.urls.length > 0) {
-            data.urls.forEach((url, idx) => {
+        try {
+            const snap = await getDoc(doc(db, "all_notes", window.currentEditId));
+            if(!snap.exists()) return window.navigateTo('dashboardPage');
+            
+            const data = snap.data();
+            document.getElementById('editFolderTitle').innerText = `📚 ${data.chapter}`;
+            area.innerHTML = "";
+            
+            if(data.text_content) {
                 area.innerHTML += `
-                <div class="glass-box" style="padding:10px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; width:100%; box-sizing:border-box;">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <img src="${url}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; border:1px solid #444;">
-                        <span style="font-weight:bold;">Page ${idx + 1}</span>
-                    </div>
-                    <button onclick="window.deletePageFromFolder('${window.currentEditId}', ${idx})" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:6px 12px; border-radius:5px; cursor:pointer; font-weight:bold;">DELETE</button>
+                <div class="glass-box" style="padding:15px; margin-bottom:15px; border-color:#ffaa00; width:100%; box-sizing:border-box;">
+                    <span style="font-weight:bold; color:#ffaa00; display:block; margin-bottom:10px;">📝 Written Note Preview</span>
+                    <div style="background:rgba(0,0,0,0.5); padding:10px; border-radius:5px; margin-bottom:10px; max-height:100px; overflow-y:auto; font-size:0.8rem; color:#ccc; white-space:pre-wrap;">${data.text_content}</div>
+                    <button onclick="window.clearTextNote('${window.currentEditId}')" style="width:100%; background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:8px 12px; border-radius:5px; cursor:pointer; font-weight:bold;">DELETE TEXT</button>
                 </div>`;
-            });
-        } else if(!data.text_content) {
-            area.innerHTML += `<p style="text-align:center; color:#888;">This folder is entirely empty.</p>`;
-        }
+            }
+
+            if(data.urls && data.urls.length > 0) {
+                data.urls.forEach((url, idx) => {
+                    area.innerHTML += `
+                    <div class="glass-box" style="padding:10px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; width:100%; box-sizing:border-box;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <img src="${url}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; border:1px solid #444;">
+                            <span style="font-weight:bold;">Page ${idx + 1}</span>
+                        </div>
+                        <button onclick="window.deletePageFromFolder('${window.currentEditId}', ${idx})" style="background:rgba(255,0,0,0.2); color:#ff4d4d; border:1px solid #ff4d4d; padding:6px 12px; border-radius:5px; cursor:pointer; font-weight:bold;">DELETE</button>
+                    </div>`;
+                });
+            } else if(!data.text_content) {
+                area.innerHTML += `<p style="text-align:center; color:#888;">This folder is entirely empty.</p>`;
+            }
+        } catch(e) { area.innerHTML = "Error: " + e.message; }
     };
 
     window.deletePageFromFolder = async (id, idx) => {
         if(!confirm("Remove this specific page from the folder?")) return;
-        const snap = await getDoc(doc(db, "all_notes", id));
-        let urls = snap.data().urls;
-        urls.splice(idx, 1);
+        try {
+            const snap = await getDoc(doc(db, "all_notes", id));
+            let urls = snap.data().urls;
+            urls.splice(idx, 1);
 
-        if(urls.length === 0 && !snap.data().text_content) {
-            await deleteDoc(doc(db, "all_notes", id));
-            window.navigateTo('dashboardPage');
-        } else {
-            await updateDoc(doc(db, "all_notes", id), { urls: urls });
-            window.renderFolderEdit(); 
-        }
+            if(urls.length === 0 && !snap.data().text_content) {
+                await deleteDoc(doc(db, "all_notes", id));
+                window.navigateTo('dashboardPage');
+            } else {
+                await updateDoc(doc(db, "all_notes", id), { urls: urls });
+                window.renderFolderEdit(); 
+            }
+        } catch(e) { alert("Error: " + e.message); }
     };
 
     const subs = ["BOOKS", "History", "Geography", "Civics", "Economics", "INFORMATION TECHNOLOGY", "PHYSICS", "CHEMISTRY", "BIOLOGY", "हिंदी व्याकरण", "हिंदी", "Eng Lang", "Eng Lit", "Maths"];
@@ -1469,26 +1498,28 @@
         window.setActivity(`Browsing Subject: ${s}`);
         window.navigateTo('chapterPage');
         
-        const snap = await getDocs(collection(db, "all_notes"));
-        const chaps = new Set(); 
-        snap.forEach(d => { 
-            if(d.data().subject === s && d.data().chapter) chaps.add(d.data().chapter); 
-        });
-        
-        const g = document.getElementById('chapGrid'); g.innerHTML = "";
-        if(chaps.size === 0) { g.innerHTML = "<p style='color:#888; text-align:center;'>No folders found.</p>"; return; }
+        try {
+            const snap = await getDocs(collection(db, "all_notes"));
+            const chaps = new Set(); 
+            snap.forEach(d => { 
+                if(d.data().subject === s && d.data().chapter) chaps.add(d.data().chapter); 
+            });
+            
+            const g = document.getElementById('chapGrid'); g.innerHTML = "";
+            if(chaps.size === 0) { g.innerHTML = "<p style='color:#888; text-align:center;'>No folders found.</p>"; return; }
 
-        chaps.forEach(c => {
-            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
-            
-            if (selSub === "BOOKS") {
-                b.style.borderColor = "#ffaa00";
-                b.style.color = "#ffaa00";
-                b.style.background = "rgba(255, 170, 0, 0.1)";
-            }
-            
-            b.onclick = () => loadPosters(c); g.appendChild(b);
-        });
+            chaps.forEach(c => {
+                const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = c;
+                
+                if (selSub === "BOOKS") {
+                    b.style.borderColor = "#ffaa00";
+                    b.style.color = "#ffaa00";
+                    b.style.background = "rgba(255, 170, 0, 0.1)";
+                }
+                
+                b.onclick = () => loadPosters(c); g.appendChild(b);
+            });
+        } catch(e) { alert("Error loading chapters: " + e.message); }
     }
 
     async function loadPosters(c) {
@@ -1496,40 +1527,42 @@
         window.setActivity(`Viewing: ${c}`);
         window.navigateTo('posterListPage');
         
-        const snap = await getDocs(collection(db, "all_notes"));
-        const users = new Map();
-        snap.forEach(d => {
-            const data = d.data();
-            if(data.subject === selSub && data.chapter === c) {
-                let vCode = data.vault_code;
-                if(!vCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) vCode = "777";
-                if(!vCode) vCode = "Legacy";
+        try {
+            const snap = await getDocs(collection(db, "all_notes"));
+            const users = new Map();
+            snap.forEach(d => {
+                const data = d.data();
+                if(data.subject === selSub && data.chapter === c) {
+                    let vCode = data.vault_code;
+                    if(!vCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) vCode = "777";
+                    if(!vCode) vCode = "Legacy";
+                    
+                    const vName = data.display_author || data.author || "Unknown User";
+                    users.set(vCode, vName);
+                }
+            });
+            
+            const g = document.getElementById('posterGrid'); g.innerHTML = "";
+            users.forEach((n, code) => {
+                const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "Folder by " + n;
                 
-                const vName = data.display_author || data.author || "Unknown User";
-                users.set(vCode, vName);
-            }
-        });
-        
-        const g = document.getElementById('posterGrid'); g.innerHTML = "";
-        users.forEach((n, code) => {
-            const b = document.createElement('div'); b.className = 'item-btn'; b.innerText = "Folder by " + n;
-            
-            if (selSub === "BOOKS") {
-                b.style.borderColor = "#ffaa00";
-                b.style.color = "#ffaa00";
-                b.style.background = "rgba(255, 170, 0, 0.1)";
-            } else if (selSub === "PRACTICE QUESTIONS FOR TESTS") {
-                b.style.borderColor = "#0aff0a";
-                b.style.color = "#0aff0a";
-                b.style.background = "rgba(10, 255, 10, 0.1)";
-            } else if (selSub === "HOLIDAY HOMEWORK (HHW)") {
-                b.style.borderColor = "#ff00ff";
-                b.style.color = "#ff00ff";
-                b.style.background = "rgba(255, 0, 255, 0.1)";
-            }
-            
-            b.onclick = () => loadGallery(n, code); g.appendChild(b);
-        });
+                if (selSub === "BOOKS") {
+                    b.style.borderColor = "#ffaa00";
+                    b.style.color = "#ffaa00";
+                    b.style.background = "rgba(255, 170, 0, 0.1)";
+                } else if (selSub === "PRACTICE QUESTIONS FOR TESTS") {
+                    b.style.borderColor = "#0aff0a";
+                    b.style.color = "#0aff0a";
+                    b.style.background = "rgba(10, 255, 10, 0.1)";
+                } else if (selSub === "HOLIDAY HOMEWORK (HHW)") {
+                    b.style.borderColor = "#ff00ff";
+                    b.style.color = "#ff00ff";
+                    b.style.background = "rgba(255, 0, 255, 0.1)";
+                }
+                
+                b.onclick = () => loadGallery(n, code); g.appendChild(b);
+            });
+        } catch(e) { alert("Error loading folders: " + e.message); }
     }
 
     async function loadGallery(name, code) {
@@ -1571,6 +1604,7 @@
                 let dCode = data.vault_code;
                 if(!dCode && (data.author === "Retro Hope" || data.display_author === "Retro Hope")) dCode = "777";
                 
+                // PURE JS FILTERING: Checks Vault Code, Subject, and Chapter matches exactly
                 if(dCode !== code || data.subject !== selSub || data.chapter !== selChap) return;
 
                 let hasFiles = data.urls && data.urls.length > 0;
@@ -1685,7 +1719,6 @@
         } else { alert("Invalid page number."); }
     };
 
-    // --- DYNAMIC ADMIN RADAR (WITH AUTO TEST-GENERATOR) ---
     window.loadAdminDashboard = async () => {
         const list = document.getElementById('adminList'); 
         
@@ -1698,7 +1731,6 @@
         if(window.radarInterval) clearInterval(window.radarInterval);
         window.radarInterval = setInterval(window.renderRadar, 3000); 
 
-        // PURE JS COLLECTION CALL
         if(window.adminFeedSyncRef) window.adminFeedSyncRef();
         window.adminFeedSyncRef = onSnapshot(collection(db, "admin_feed"), snap => {
             const mg = document.getElementById('adminFeedManageArea'); mg.innerHTML = "";
@@ -1721,7 +1753,6 @@
             });
         });
 
-        // AUTO-GENERATOR FOR TEST VAULT
         if(window.dynamicTestsSync) window.dynamicTestsSync();
         window.dynamicTestsSync = onSnapshot(collection(db, "all_notes"), snap => {
             const box = document.getElementById('adminTestToggles');
@@ -1762,20 +1793,22 @@
 
         let imgUrl = "";
         if(file) {
-            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); return; }
+            try { imgUrl = await safeImgUpload(file); } catch(e) { alert("Upload Failed"); btn.innerText = "SEND"; btn.disabled = false; return; }
         }
         
-        await addDoc(collection(db, "messages"), { 
-            to_code: window.pmTargetCode, 
-            from: "SYSTEM ADMIN", 
-            text: txt, 
-            img: imgUrl,
-            timestamp: Date.now()
-        });
+        try {
+            await addDoc(collection(db, "messages"), { 
+                to_code: window.pmTargetCode, 
+                from: "SYSTEM ADMIN", 
+                text: txt, 
+                img: imgUrl,
+                timestamp: Date.now()
+            });
 
-        btn.innerText = "SEND"; btn.disabled = false;
-        document.getElementById('pmModal').style.display = 'none';
-        alert("Message sent securely to their personal inbox.");
+            btn.innerText = "SEND"; btn.disabled = false;
+            document.getElementById('pmModal').style.display = 'none';
+            alert("Message sent securely to their personal inbox.");
+        } catch(e) { alert("Error sending PM: " + e.message); btn.innerText = "SEND"; btn.disabled = false;}
     };
 
     window.renderRadar = () => {
@@ -1832,52 +1865,58 @@
 
     window.adminViewPosts = async (code) => {
         const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Scanning...";
-        const snap = await getDocs(collection(db, "all_notes"));
-        let count = 0;
-        snap.forEach(d => { 
-            let vCode = d.data().vault_code;
-            if(!vCode && (d.data().author === "Retro Hope" || d.data().display_author === "Retro Hope")) vCode = "777";
-            if(vCode === code) count++; 
-        });
-        div.innerHTML = `Folders: ${count}`;
+        try {
+            const snap = await getDocs(collection(db, "all_notes"));
+            let count = 0;
+            snap.forEach(d => { 
+                let vCode = d.data().vault_code;
+                if(!vCode && (d.data().author === "Retro Hope" || d.data().display_author === "Retro Hope")) vCode = "777";
+                if(vCode === code) count++; 
+            });
+            div.innerHTML = `Folders: ${count}`;
+        } catch(e) { div.innerHTML = "Error: " + e.message; }
     };
 
     window.adminSpyInbox = async (code) => {
         const div = document.getElementById(`adminData_${code}`); div.innerHTML = "Spying...";
-        const snap = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
-        div.innerHTML = snap.empty ? "Inbox Empty" : "";
-        snap.forEach(m => {
-            const data = m.data();
-            const hasImg = data.img ? `<span style="color:#00d2ff;">[🖼️ Image Attached]</span>` : "";
-            div.innerHTML += `<div style="border-left:2px solid red; padding-left:5px; margin-bottom:5px; font-size:0.75rem;"><b>${data.from}:</b> ${data.text} ${hasImg}</div>`;
-        });
+        try {
+            const snap = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
+            div.innerHTML = snap.empty ? "Inbox Empty" : "";
+            snap.forEach(m => {
+                const data = m.data();
+                const hasImg = data.img ? `<span style="color:#00d2ff;">[🖼️ Image Attached]</span>` : "";
+                div.innerHTML += `<div style="border-left:2px solid red; padding-left:5px; margin-bottom:5px; font-size:0.75rem;"><b>${data.from}:</b> ${data.text} ${hasImg}</div>`;
+            });
+        } catch(e) { div.innerHTML = "Error: " + e.message; }
     };
 
     window.forcePurge = async (code, name) => {
         if(prompt(`Type PURGE to wipe ${name}:`) !== "PURGE") return;
-        await deleteDoc(doc(db, "vaults", code));
-        
-        const notes = await getDocs(collection(db, "all_notes"));
-        notes.forEach(async n => {
-            let vCode = n.data().vault_code;
-            if(!vCode && (n.data().author === "Retro Hope" || n.data().display_author === "Retro Hope")) vCode = "777";
+        try {
+            await deleteDoc(doc(db, "vaults", code));
             
-            if(vCode === code) {
-                const comms = await getDocs(query(collection(db, "comments"), where("note_id", "==", n.id)));
-                comms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
-                await deleteDoc(doc(db, "all_notes", n.id));
-            }
-        });
-        const msgs = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
-        msgs.forEach(async m => await deleteDoc(doc(db, "messages", m.id)));
-        const reqs = await getDocs(query(collection(db, "wanted"), where("author", "==", name)));
-        reqs.forEach(async r => await deleteDoc(doc(db, "wanted", r.id)));
-        const myComms = await getDocs(query(collection(db, "comments"), where("author", "==", name)));
-        myComms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
-        const commPosts = await getDocs(query(collection(db, "community_posts"), where("author_code", "==", code)));
-        commPosts.forEach(async cp => await deleteDoc(doc(db, "community_posts", cp.id)));
+            const notes = await getDocs(collection(db, "all_notes"));
+            notes.forEach(async n => {
+                let vCode = n.data().vault_code;
+                if(!vCode && (n.data().author === "Retro Hope" || n.data().display_author === "Retro Hope")) vCode = "777";
+                
+                if(vCode === code) {
+                    const comms = await getDocs(query(collection(db, "comments"), where("note_id", "==", n.id)));
+                    comms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
+                    await deleteDoc(doc(db, "all_notes", n.id));
+                }
+            });
+            const msgs = await getDocs(query(collection(db, "messages"), where("to_code", "==", code)));
+            msgs.forEach(async m => await deleteDoc(doc(db, "messages", m.id)));
+            const reqs = await getDocs(query(collection(db, "wanted"), where("author", "==", name)));
+            reqs.forEach(async r => await deleteDoc(doc(db, "wanted", r.id)));
+            const myComms = await getDocs(query(collection(db, "comments"), where("author", "==", name)));
+            myComms.forEach(async c => await deleteDoc(doc(db, "comments", c.id)));
+            const commPosts = await getDocs(query(collection(db, "community_posts"), where("author_code", "==", code)));
+            commPosts.forEach(async cp => await deleteDoc(doc(db, "community_posts", cp.id)));
 
-        alert("User Wiped.");
+            alert("User Wiped.");
+        } catch(e) { alert("Purge Error: " + e.message); }
     };
 
     function enableGlobalSync(c) {
@@ -1934,7 +1973,7 @@
         });
     }
 
-    window.delNote = async (id) => { if(confirm("Delete entire folder?")) await deleteDoc(doc(db, "all_notes", id)); };
+    window.delNote = async (id) => { if(confirm("Delete entire folder?")) { try { await deleteDoc(doc(db, "all_notes", id)); } catch(e){ alert("Error: "+e.message); } } };
 
     function enableMessageSync(c) {
         onSnapshot(collection(db, "messages"), snap => {
@@ -1980,11 +2019,11 @@
     
     window.delMsg = async (id) => {
         if(confirm("Do you really want to permanently delete this message?")) {
-            await deleteDoc(doc(db, "messages", id));
+            try { await deleteDoc(doc(db, "messages", id)); } catch(e) { alert("Error: " + e.message); }
         }
     };
     
-    window.flagNote = async (c, ch) => { if(confirm("Report blurry?")) await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Please check your upload: ${ch}` }); };
+    window.flagNote = async (c, ch) => { if(confirm("Report blurry?")) { try { await addDoc(collection(db, "messages"), { to_code: c, from: "SYSTEM", text: `Please check your upload: ${ch}` }); } catch(e){ alert("Error: "+e.message); } } };
 
     function listenComments(id) {
         onSnapshot(query(collection(db, "comments"), where("note_id", "==", id)), snap => {
@@ -1994,7 +2033,12 @@
     }
     window.postComm = async (id) => {
         const t = document.getElementById(`in_${id}`).value;
-        if(t) { await addDoc(collection(db, "comments"), { note_id: id, author: currentVault.name, text: t }); document.getElementById(`in_${id}`).value = ""; }
+        if(t) { 
+            try {
+                await addDoc(collection(db, "comments"), { note_id: id, author: currentVault.name, text: t }); 
+                document.getElementById(`in_${id}`).value = ""; 
+            } catch(e) { alert("Error: " + e.message); }
+        }
     };
 </script>
 </body>
